@@ -252,7 +252,7 @@
 // ==================== КОНФІГУРАЦІЯ ====================
 const CONFIG = {
   GOOGLE_CLIENT_ID: '359913599174-l5djl2urdlhk0u4801fee9gmd2g84sll.apps.googleusercontent.com',
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxTePyTVs75HKMDkbVLSWEjOXhDuuSy_LmhC3tYm99onZDM7whY69kPvFtB1gIz4KM_/exec'
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx5JQ-uyQsmYrvuYCB8d5uRv4hOssaEIu0UW2h3bgddnxP_olnnMC6o5pblQdE4X_HT/exec'
 };
 
 let googleToken = null;
@@ -412,6 +412,7 @@ function показатиПідсумокПоїздки(підсумок) {
 async function зберегтиПоїздкуКлієнт() {
   if (!підсумокПоточноїПоїздки) return;
   const дані = {
+    номерЛиста: document.getElementById('л-номер').value,
     маршрутТекст: document.getElementById('п-маршрут').value,
     вибуття: document.getElementById('п-вибуття').value,
     прибуття: document.getElementById('п-прибуття').value,
@@ -460,6 +461,7 @@ function форматДата(значення) {
 // ---------- ПММ ----------
 async function зберегтиПММКлієнт() {
   const дані = {
+    номерЛиста: document.getElementById('л-номер').value,
     найменування: document.getElementById('м-найменування').value,
     наявністьПеред: document.getElementById('м-наявність').value,
     отримано: document.getElementById('м-отримано').value
