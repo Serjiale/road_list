@@ -6,6 +6,7 @@
 <title>Дорожній лист</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="docx-bundle.js"></script>
 <style>
   :root{
     --bg:#151210; --bg2:#1d1916; --panel:#211c18; --border:#3a322a;
@@ -259,7 +260,8 @@
     <div class="add-row-form" style="max-width:1500px;">
       <h2 style="margin-top:0;">Сформувати документ</h2>
       <p style="color:var(--dim); font-size:13px;">Перевір обидві сторінки — тоді тисни. Норма витрати ПММ у документ не потрапляє, лише результати розрахунку.</p>
-      <button onclick="згенеруватиExcel()">Згенерувати Excel</button>
+      <button onclick="згенеруватиDocx()">Згенерувати Word (.docx) — точна копія бланка</button>
+      <button class="secondary" onclick="згенеруватиExcel()">Згенерувати Excel</button>
       <div id="excel-повідомлення"></div>
     </div>
   </div>
@@ -604,6 +606,67 @@ async function видалитиРядокПоїздки(i) {
   delete тр.dataset.id;
   const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
   кнопка.disabled = false; кнопка.textContent = '🧮';
+}
+
+// ==================== ГЕНЕРАЦІЯ WORD (.docx) — ЗАПОВНЕННЯ ТОЧНОГО ШАБЛОНУ ====================
+async function згенеруватиDocx() {
+  try {
+    const відповідь = await fetch('шаблон.docx');
+    if (!відповідь.ok) throw new Error('Не вдалося завантажити шаблон.docx (перевір, що файл лежить поруч з index.html)');
+    const arrayBuffer = await відповідь.arrayBuffer();
+    const zip = new PizZip(arrayBuffer);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    const context = {
+      номер: document.getElementById('л-номер').value,
+      дійсний_день: document.getElementById('л-дійснийдо-д').value,
+      дійсний_місяць: document.getElementById('л-дійснийдо-м').value,
+      дійсний_рік: document.getElementById('л-дійснийдо-р').value,
+      частина: document.getElementById('л-частина').value,
+      водій: document.getElementById('л-водій').value,
+      старший_машини: document.getElementById('л-старшиймашини').value,
+      маршрут: document.getElementById('л-маршрутзагальний').value,
+      начальник: document.getElementById('л-начальник').value,
+      технік_піб: document.getElementById('л-технікпіб').value,
+      технік_день: document.getElementById('л-технікдата-д').value,
+      технік_місяць: document.getElementById('л-технікдата-м').value,
+      технік_рік: document.getElementById('л-технікдата-р').value,
+      ктп_піб: document.getElementById('л-ктппіб').value,
+      ктп_день: document.getElementById('л-ктпдата-д').value,
+      ктп_місяць: document.getElementById('л-ктпдата-м').value,
+      ктп_рік: document.getElementById('л-ктпдата-р').value,
+      вибуття_дата: document.getElementById('л-вибуттядата').value,
+      вибуття_одометр: document.getElementById('л-вибуттяодометр').value,
+      прибуття_дата: document.getElementById('л-прибуттядата').value,
+      прибуття_одометр: document.getElementById('л-прибуттяодометр').value,
+      v_номер: document.getElementById('л-номер').value,
+      v_дата: document.getElementById('л-дата').value,
+      v_підстава: document.getElementById('л-підстава').value,
+      v_марка: обраМашина ? обраМашина.марка : '',
+      v_держномер: обраМашина ? обраМашина.держНомер : '',
+      v_причіп: document.getElementById('л-причіп').value,
+      v_причіпномер: document.getElementById('л-причіпномер').value,
+      v_група: обраМашина ? обраМашина.група : '',
+      v_вантаж: document.getElementById('л-вантаж').value,
+      v_маса: document.getElementById('л-масавантажу').value,
+      пмм: зібратиДаніПММ(),
+      поїздки: зібратиДаніПоїздок()
+    };
+
+    doc.render(context);
+    const блоб = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+    const посилання = document.createElement('a');
+    посилання.href = URL.createObjectURL(блоб);
+    посилання.download = 'Дорожній лист №' + (context.номер || 'без номера') + '.docx';
+    посилання.click();
+
+    повідомлення('excel-повідомлення', 'Файл Word сформовано і завантажено.', true);
+  } catch (е) {
+    повідомлення('excel-повідомлення', 'Помилка формування Word-файлу: ' + е.message, false);
+  }
 }
 
 // ==================== ГЕНЕРАЦІЯ EXCEL ====================
