@@ -30,42 +30,41 @@
   .tab.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); font-weight:bold; }
   .panel{ display:none; padding:0 24px; } .panel.active{ display:block; }
 
+  /* Аркуш А4 landscape: пропорція ширина:висота ≈ 297:210 = 1.414 */
   .paper{
-    background:#f7f4ee; color:#111; border-radius:4px; padding:20px;
-    max-width:98vw; width:100%; margin:0 auto 20px; box-shadow:0 8px 30px rgba(0,0,0,.4);
-    font-size:12px; overflow-x:auto;
+    background:#f7f4ee; color:#111; border-radius:2px; padding:18px 22px;
+    max-width:1500px; width:100%; margin:0 auto 20px; box-shadow:0 8px 30px rgba(0,0,0,.4);
+    font-size:11px; aspect-ratio:297/210; overflow-y:auto;
   }
-  .paper table{ border-collapse:collapse; width:100%; }
-  .paper td, .paper th{ border:1px solid #333; padding:2px 4px; vertical-align:middle; font-size:11px; }
+  .paper table{ border-collapse:collapse; width:100%; table-layout:fixed; }
+  .paper td, .paper th{ border:1px solid #333; padding:2px 3px; vertical-align:middle; font-size:10px; overflow:hidden; }
   .paper th{ font-weight:normal; text-align:center; background:#eae5d8; }
   .paper input, .paper select{
-    width:100%; border:none; background:transparent; font-family:inherit; font-size:11px;
-    padding:2px; color:#111; min-width:60px;
+    width:100%; border:none; background:transparent; font-family:inherit; font-size:10px;
+    padding:1px; color:#111;
   }
   .paper input:focus, .paper select:focus{ outline:1px solid var(--accent); background:#fff8ea; }
-  .label-sm{ font-size:9px; color:#555; display:block; }
+  .label-sm{ font-size:8px; color:#555; display:block; }
   .center{ text-align:center; } .bold{ font-weight:bold; }
-  .stamp-note{ font-size:10px; color:#555; text-align:right; }
-  .title-row{ text-align:center; font-size:16px; font-weight:bold; margin:10px 0; }
   .no-border{ border:none !important; }
   .readonly-cell{ background:#f0ede4; text-align:center; }
 
-  .del-col{ border:none !important; width:20px; padding:0 !important; text-align:center; cursor:pointer;
-    color:transparent; font-weight:bold; font-size:14px; user-select:none; }
-  tr:hover .del-col{ color:#ddd; }
+  .del-col{ border:none !important; width:16px; padding:0 !important; text-align:center; cursor:pointer;
+    color:transparent; font-weight:bold; font-size:12px; user-select:none; }
+  tr:hover .del-col{ color:#ccc; }
   .del-col:hover{ color:var(--danger) !important; }
 
-  .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:2px 5px;
-    font-size:10px; cursor:pointer; white-space:nowrap; margin-left:2px; }
+  .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:1px 4px;
+    font-size:9px; cursor:pointer; white-space:nowrap; margin-left:1px; }
   .calc-btn:disabled{ background:#ccc; cursor:default; }
-  .route-cell{ display:flex; gap:2px; align-items:center; }
-  .route-cell input{ flex:1; }
+  .route-cell{ display:flex; gap:1px; align-items:center; }
+  .route-cell input{ flex:1; min-width:0; }
 
-  .toolbar{ max-width:98vw; margin:0 auto 14px; display:flex; gap:10px; flex-wrap:wrap; }
+  .toolbar{ max-width:1500px; margin:0 auto 14px; display:flex; gap:10px; flex-wrap:wrap; }
   button{ padding:9px 16px; background:var(--accent); color:#1a1310; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; }
   button.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--border); }
 
-  .msg{ max-width:98vw; margin:0 auto 14px; padding:10px 14px; border-radius:6px; font-size:13px; }
+  .msg{ max-width:1500px; margin:0 auto 14px; padding:10px 14px; border-radius:6px; font-size:13px; }
   .msg.ok{ background:#1f3a1f; color:#a8e6a8; border:1px solid #2f5a2f; }
   .msg.err{ background:#3a1f1f; color:#e6a8a8; border:1px solid #5a2f2f; }
 
@@ -73,7 +72,7 @@
   .classify-box{ display:inline-block; border:1px solid #999; border-radius:4px; padding:6px; margin:2px; background:#fff; }
   .classify-box select, .classify-box input{ width:auto !important; display:inline-block; }
 
-  .add-row-form{ max-width:98vw; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
+  .add-row-form{ max-width:1500px; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
 </style>
 </head>
 <body>
@@ -102,48 +101,55 @@
   <!-- ==================== СТОРІНКА 1 ==================== -->
   <div id="панель-стор1" class="panel active">
     <div class="paper">
-      <div class="stamp-note">Додаток 80<br>до Інструкції з обліку військового майна<br>у Збройних Силах України</div>
-      <table class="no-border" style="margin-bottom:4px;">
+      <table class="no-border" style="margin-bottom:2px;">
+        <colgroup><col style="width:64.96%"><col style="width:35.04%"></colgroup>
         <tr class="no-border">
-          <td class="no-border" style="width:60%;">Дійсний до "<input id="л-дійснийдо-д" style="width:30px; display:inline; text-align:center;" placeholder="__">"
-            <input id="л-дійснийдо-м" style="width:70px; display:inline;" placeholder="місяць"> <input id="л-дійснийдо-р" style="width:60px; display:inline;" placeholder="2026" value="2026"> року</td>
+          <td class="no-border">Дійсний до "<input id="л-дійснийдо-д" style="width:24px; display:inline; text-align:center;" placeholder="__">"
+            <input id="л-дійснийдо-м" style="width:120px; display:inline;" placeholder="_______________"> 20<input id="л-дійснийдо-р" style="width:30px; display:inline;" placeholder="__"> року</td>
+          <td class="no-border" style="font-size:10px;">Додаток 80<br>до Інструкції з обліку військового майна<br>у Збройних Силах України</td>
         </tr>
       </table>
-      <div class="title-row">ДОРОЖНІЙ ЛИСТ № <input id="л-номер" style="width:100px; display:inline; text-align:center; font-weight:bold; font-size:15px; border-bottom:1px solid #333;"></div>
+      <div class="bold center" style="font-size:15px; margin:8px 0;">ДОРОЖНІЙ ЛИСТ № <input id="л-номер" style="width:90px; display:inline; text-align:center; font-weight:bold; font-size:14px; border-bottom:1px solid #333;"></div>
       <table class="no-border">
-        <tr class="no-border"><td class="no-border" style="width:30%;">Військова частина (підрозділ)</td><td class="no-border"><input id="л-частина" placeholder="напр. A4219 2ББАК 1РБАК"></td></tr>
+        <tr class="no-border"><td class="no-border" colspan="2">Військова частина (підрозділ) <input id="л-частина" style="width:60%; display:inline;" placeholder="напр. A4219 2ББАК 1РБАК"></td></tr>
         <tr class="no-border">
-          <td class="no-border">Водій<br><span class="label-sm">(звання, прізвище, ініціали)</span></td>
-          <td class="no-border"><select id="л-водій"></select></td>
+          <td class="no-border" style="width:50%;">Водій <select id="л-водій" style="display:inline; width:75%;"></select></td>
+          <td class="no-border">Старший машини <input id="л-старшиймашини" style="width:70%; display:inline;"></td>
         </tr>
         <tr class="no-border">
-          <td class="no-border">Старший машини<br><span class="label-sm">(звання, прізвище, ініціали)</span></td>
-          <td class="no-border"><input id="л-старшиймашини"></td>
+          <td class="no-border"><span class="label-sm">(військове звання, прізвище, ініціали)</span></td>
+          <td class="no-border"><span class="label-sm">(військове звання, прізвище, ініціали)</span></td>
         </tr>
         <tr class="no-border">
-          <td class="no-border">Маршрут руху</td>
-          <td class="no-border"><input id="л-маршрутзагальний" placeholder="автоматично зі списку поїздок, або впиши сам"></td>
+          <td class="no-border">Маршрут руху <input id="л-маршрутзагальний" style="width:70%; display:inline;" placeholder="автоматично зі списку поїздок"></td>
+          <td class="no-border">Начальник служби ВТ <input id="л-начальник" style="width:60%; display:inline;"></td>
         </tr>
         <tr class="no-border">
-          <td class="no-border">Начальник служби ВТ<br><span class="label-sm">(посада, звання, підпис, прізвище, ініціали)</span></td>
-          <td class="no-border"><input id="л-начальник"></td>
+          <td class="no-border" style="text-align:center;">М.П.</td>
+          <td class="no-border"><span class="label-sm">(посада, військове звання, підпис, прізвище, ініціали)</span></td>
         </tr>
       </table>
 
-      <table style="margin-top:6px;">
+      <table style="margin-top:4px;">
+        <colgroup>
+          <col style="width:26.97%"><col style="width:25.73%">
+          <col style="width:11.31%"><col style="width:14.02%"><col style="width:12.42%"><col style="width:9.55%">
+        </colgroup>
         <tr>
-          <td style="width:25%;">Машина технічно справна<br><span class="label-sm">старший технік (технік) підрозділу</span><br><input id="л-технікпіб" placeholder="звання, ПІБ"></td>
-          <td style="width:25%;">Технічний стан машини перевірив<br><span class="label-sm">начальник КТП</span><br><input id="л-ктппіб" placeholder="звання, ПІБ"></td>
+          <td rowspan="2">Машина технічно справна<br><span class="label-sm">старший технік (технік) підрозділу</span><br>
+            <input id="л-технікпіб" placeholder="звання, підпис, прізвище"><br>
+            "<input id="л-технікдата-д" style="width:20px; display:inline;" placeholder="__">" <input id="л-технікдата-м" style="width:70px; display:inline;" placeholder="_______"> 20<input id="л-технікдата-р" style="width:20px; display:inline;" placeholder="__"> року</td>
+          <td rowspan="2">Технічний стан машини<br><span class="label-sm">перевірив начальник КТП</span><br>
+            <input id="л-ктппіб" placeholder="звання, підпис, прізвище"><br>
+            "<input id="л-ктпдата-д" style="width:20px; display:inline;" placeholder="__">" <input id="л-ктпдата-м" style="width:70px; display:inline;" placeholder="_______"> 20<input id="л-ктпдата-р" style="width:20px; display:inline;" placeholder="__"> року</td>
           <th colspan="2">Вибуття</th>
           <th colspan="2">Прибуття</th>
         </tr>
         <tr>
-          <td><span class="label-sm">дата</span><input id="л-технікдата" type="date"></td>
-          <td><span class="label-sm">дата</span><input id="л-ктпдата" type="date"></td>
-          <th>дата/час</th><th>одометр</th><th>дата/час</th><th>одометр</th>
+          <th>дата/час</th><th>показники одометра</th><th>дата/час</th><th>показники одометра</th>
         </tr>
         <tr>
-          <td colspan="2"></td>
+          <td colspan="2" class="no-border"></td>
           <td><input id="л-вибуттядата" type="datetime-local"></td>
           <td><input id="л-вибуттяодометр" type="number"></td>
           <td><input id="л-прибуттядата" type="datetime-local"></td>
@@ -151,7 +157,12 @@
         </tr>
       </table>
 
-      <table style="margin-top:6px;">
+      <table style="margin-top:4px;">
+        <colgroup>
+          <col style="width:8.60%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:11.46%">
+          <col style="width:10.20%"><col style="width:10.51%"><col style="width:10.51%"><col style="width:8.60%">
+          <col style="width:12.42%"><col style="width:9.55%">
+        </colgroup>
         <tr>
           <th>Номер документа</th><th>Дата документа</th><th>Підстава (мета) виписки</th><th>Марка машини</th>
           <th>Номерний знак машини</th><th>Марка причепа</th><th>Номерний знак причепа</th>
@@ -171,11 +182,16 @@
         </tr>
       </table>
 
-      <div class="bold" style="margin-top:10px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
+      <div class="bold" style="margin-top:6px; font-size:11px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
       <table>
+        <colgroup>
+          <col style="width:20.06%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
+          <col style="width:12.42%"><col style="width:9.55%"><col style="width:9.55%"><col style="width:8.60%">
+          <col style="width:9.24%"><col style="width:16px">
+        </colgroup>
         <tr>
           <th>Найменування пального та мастильних матеріалів</th><th>Код номенклатури</th>
-          <th>Наявність перед виїздом</th><th>Отримано</th><th>Наявність під час постановки на стоянку</th>
+          <th>Наявність Перед виїздом</th><th>Отримано</th><th>Наявність під час постановки на стоянку</th>
           <th>Витрачено</th><th>Належить за нормою</th><th>Економія</th><th>Перевитрата</th><th class="del-col no-border"></th>
         </tr>
         <tbody id="таблиця-пмм"></tbody>
@@ -186,15 +202,27 @@
   <!-- ==================== СТОРІНКА 2 ==================== -->
   <div id="панель-стор2" class="panel">
     <div class="paper">
-      <div class="bold center" style="margin-bottom:6px;">2. Робота машини</div>
+      <table class="no-border" style="margin-bottom:4px;">
+        <colgroup><col style="width:80.52%"><col style="width:19.48%"></colgroup>
+        <tr class="no-border">
+          <td class="no-border bold center" style="font-size:12px;">2. Робота машини</td>
+          <td class="no-border" style="font-size:10px;">Продовження<br>Зворотний бік</td>
+        </tr>
+      </table>
       <table>
+        <colgroup>
+          <col style="width:26.62%"><col style="width:6.44%"><col style="width:6.44%">
+          <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
+          <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
+          <col style="width:14.47%"><col style="width:16px">
+        </colgroup>
         <tr>
           <th rowspan="3">Маршрут руху (звідки, куди)</th>
           <th colspan="2">Дата і час (години, хвилини)</th>
           <th colspan="5">Пройдено кілометрів</th>
           <th colspan="3">Відпрацьовано мотогодин</th>
           <th colspan="2">Виконана робота</th>
-          <th rowspan="3">Показання спідометра</th>
+          <th rowspan="3">Показання спідометра, час і місце відпускання машини, підпис старшого машини (особи, яка використовувала машину)</th>
           <th rowspan="3" class="del-col no-border"></th>
         </tr>
         <tr>
@@ -211,9 +239,11 @@
         <tbody id="таблиця-поїздки"></tbody>
       </table>
 
-      <table class="no-border" style="margin-top:16px;">
-        <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________</td></tr>
+      <table class="no-border" style="margin-top:10px;">
+        <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________ <span class="label-sm" style="display:inline;">(військове звання, підпис, прізвище, ініціали)</span></td></tr>
         <tr class="no-border"><td class="no-border">Правильність оформлення дорожнього листа перевірив ______________________</td></tr>
+        <tr class="no-border"><td class="no-border"><span class="label-sm">(посада, військове звання, підпис, прізвище, ініціали)</span></td></tr>
+        <tr class="no-border"><td class="no-border">"____" _________________ 20____ року</td></tr>
       </table>
     </div>
   </div>
@@ -226,7 +256,7 @@
 
   <!-- ==================== EXCEL ==================== -->
   <div id="панель-excel" class="panel">
-    <div class="add-row-form" style="max-width:98vw;">
+    <div class="add-row-form" style="max-width:1500px;">
       <h2 style="margin-top:0;">Сформувати документ</h2>
       <p style="color:var(--dim); font-size:13px;">Перевір обидві сторінки — тоді тисни. Норма витрати ПММ у документ не потрапляє, лише результати розрахунку.</p>
       <button onclick="згенеруватиExcel()">Згенерувати Excel</button>
@@ -242,8 +272,9 @@ const CONFIG = {
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxTePyTVs75HKMDkbVLSWEjOXhDuuSy_LmhC3tYm99onZDM7whY69kPvFtB1gIz4KM_/exec'
 };
 
-const К_ПММ_РЯДКІВ = 14;
-const К_ПОЇЗДКИ_РЯДКІВ = 23;
+// Точна кількість рядків згідно з реальним бланком (Додаток 80)
+const К_ПММ_РЯДКІВ = 7;
+const К_ПОЇЗДКИ_РЯДКІВ = 17;
 
 let googleToken = null;
 let обраМашина = null;
@@ -384,7 +415,7 @@ async function створитиЛист() {
   const дані = {
     номерДокумента: document.getElementById('л-номер').value,
     дата: document.getElementById('л-дата').value,
-    дійснийДо: document.getElementById('л-дійснийдо-р').value,
+    дійснийДо: '20' + (document.getElementById('л-дійснийдо-р').value || ''),
     держНомер: document.getElementById('л-машина').value,
     водій: document.getElementById('л-водій').value,
     підстава: document.getElementById('л-підстава').value,
@@ -626,8 +657,10 @@ async function згенеруватиExcel() {
     const заголовокСтиль = { bold: true };
     const заголовокФон = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAE5D8' } };
 
-    const с1 = workbook.addWorksheet('Сторінка 1');
-    с1.getColumn(1).width = 26; for (let c = 2; c <= 10; c++) с1.getColumn(c).width = 13;
+    const с1 = workbook.addWorksheet('Сторінка 1', { pageSetup: { orientation: 'landscape', fitToPage: true } });
+    // Ширини колонок пропорційні реальному бланку (twips → умовні одиниці Excel)
+    const шириниВант = [3089,1324,1471,1912,1912,1471,1471,1324,1423].map(w => Math.round(w/90));
+    шириниВант.forEach((w, i) => с1.getColumn(i + 1).width = w);
 
     с1.mergeCells('A1:J1');
     с1.getCell('A1').value = 'ДОРОЖНІЙ ЛИСТ № ' + document.getElementById('л-номер').value;
@@ -636,7 +669,7 @@ async function згенеруватиExcel() {
 
     let r = 3;
     const шапка = [
-      ['Дійсний до', [document.getElementById('л-дійснийдо-д').value, document.getElementById('л-дійснийдо-м').value, document.getElementById('л-дійснийдо-р').value].filter(Boolean).join(' ')],
+      ['Дійсний до', '"' + document.getElementById('л-дійснийдо-д').value + '" ' + document.getElementById('л-дійснийдо-м').value + ' 20' + document.getElementById('л-дійснийдо-р').value + ' року'],
       ['Військова частина (підрозділ)', document.getElementById('л-частина').value],
       ['Водій', document.getElementById('л-водій').value],
       ['Старший машини', document.getElementById('л-старшиймашини').value],
@@ -674,8 +707,8 @@ async function згенеруватиExcel() {
     с1.getCell('A' + r).value = '1. Витрата пального і мастильних матеріалів (у літрах)';
     с1.getCell('A' + r).font = { bold: true };
     r++;
-    const заголовкиПММ = ['Найменування', 'Код номенклатури', 'Наявність перед виїздом', 'Отримано',
-      'Наявність на стоянці', 'Витрачено', 'Належить за нормою', 'Економія', 'Перевитрата'];
+    const заголовкиПММ = ['Найменування пального та мастильних матеріалів', 'Код номенклатури', 'Наявність Перед виїздом', 'Отримано',
+      'Наявність під час постановки на стоянку', 'Витрачено', 'Належить за нормою', 'Економія', 'Перевитрата'];
     заголовкиПММ.forEach((з, i) => { const кл = с1.getCell(r, i + 1); кл.value = з; кл.font = заголовокСтиль; кл.border = межа; кл.fill = заголовокФон; });
     r++;
     зібратиДаніПММ().forEach(п => {
@@ -684,15 +717,16 @@ async function згенеруватиExcel() {
       r++;
     });
 
-    const с2 = workbook.addWorksheet('Сторінка 2');
-    for (let c = 1; c <= 14; c++) с2.getColumn(c).width = c === 1 || c === 14 ? 22 : 11;
+    const с2 = workbook.addWorksheet('Сторінка 2', { pageSetup: { orientation: 'landscape', fitToPage: true } });
+    const шириниПоїздки = [4099,992,992,709,709,709,709,709,709,709,709,709,709,2229].map(w => Math.round(w/90));
+    шириниПоїздки.forEach((w, i) => с2.getColumn(i + 1).width = w);
 
     с2.mergeCells('A1:A3'); с2.getCell('A1').value = 'Маршрут руху (звідки, куди)';
     с2.mergeCells('B1:C1'); с2.getCell('B1').value = 'Дата і час (години, хвилини)';
     с2.mergeCells('D1:H1'); с2.getCell('D1').value = 'Пройдено кілометрів';
     с2.mergeCells('I1:K1'); с2.getCell('I1').value = 'Відпрацьовано мотогодин';
     с2.mergeCells('L1:M1'); с2.getCell('L1').value = 'Виконана робота';
-    с2.mergeCells('N1:N3'); с2.getCell('N1').value = 'Показання спідометра, час і місце відпускання машини, підпис старшого машини';
+    с2.mergeCells('N1:N3'); с2.getCell('N1').value = 'Показання спідометра, час і місце відпускання машини, підпис старшого машини (особи, яка використовувала машину)';
 
     с2.mergeCells('B2:B3'); с2.getCell('B2').value = 'вибуття';
     с2.mergeCells('C2:C3'); с2.getCell('C2').value = 'прибуття';
