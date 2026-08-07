@@ -7,144 +7,249 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; font-size: 14px; background:#f6f7f9; }
-  h1 { font-size: 18px; } h2 { font-size: 15px; margin-top: 0; }
-  .card { background:#fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap: wrap; }
-  .tab { flex:1; min-width:80px; padding:8px; text-align:center; background:#eee; border-radius:6px; cursor:pointer; }
-  .tab.active { background:#4a86c8; color:#fff; }
-  .panel { display:none; } .panel.active { display:block; }
-  label { display:block; margin-top:10px; font-weight:bold; font-size:13px; }
-  input, select { width:100%; padding:6px; margin-top:4px; box-sizing:border-box; font-size:14px; }
-  button { margin-top:14px; padding:10px; width:100%; background:#4a86c8; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
-  button.secondary { background:#888; }
-  .row2 { display:flex; gap:10px; } .row2 > div { flex:1; }
-  .msg { margin-top:10px; padding:10px; border-radius:6px; }
-  .msg.ok { background:#dff5df; color:#1a5c1a; } .msg.err { background:#fde0e0; color:#8a1a1a; }
-  .new-point { border:1px solid #ccc; padding:8px; margin-top:8px; border-radius:6px; }
-  .summary { background:#f2f2f2; padding:10px; border-radius:6px; margin-top:10px; }
-  .list-item { border-bottom:1px solid #eee; padding:8px 0; font-size:13px; }
-  #вхід { text-align:center; padding-top:60px; }
+  :root{
+    --bg:#151210; --bg2:#1d1916; --panel:#211c18; --border:#3a322a;
+    --text:#e9e2d8; --dim:#a89a87; --accent:#d97b34; --accent2:#c25b1f; --danger:#b3452f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; padding-bottom:80px;
+    background: radial-gradient(1200px 600px at 10% -10%, #241d16 0%, transparent 60%), linear-gradient(180deg,var(--bg),#100d0b 60%);
+    color:var(--text); font-family:'Segoe UI', system-ui, sans-serif;
+  }
+  header.top{ padding:22px 20px 16px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#1c1713,#171310); position:relative; }
+  header.top::before{ content:""; position:absolute; left:0; right:0; top:0; height:3px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.6; }
+  .eyebrow{ font-family:monospace; font-size:11px; letter-spacing:.14em; color:var(--accent); text-transform:uppercase; }
+  h1{ margin:4px 0 0; font-size:20px; }
+
+  #вхід{ text-align:center; padding-top:80px; }
+  #вхід-помилка{ color:#f0a; margin-top:10px; }
+
+  .tabs{ display:flex; gap:8px; padding:14px 20px; flex-wrap:wrap; }
+  .tab{ padding:8px 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--dim); font-size:13px; }
+  .tab.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); font-weight:bold; }
+  .panel{ display:none; padding:0 20px; } .panel.active{ display:block; }
+
+  .paper{
+    background:#f7f4ee; color:#111; border-radius:4px; padding:22px;
+    max-width:980px; margin:0 auto 24px; box-shadow:0 8px 30px rgba(0,0,0,.4);
+    font-size:12.5px;
+  }
+  .paper table{ border-collapse:collapse; width:100%; }
+  .paper td, .paper th{ border:1px solid #333; padding:3px 5px; vertical-align:top; font-size:11.5px; }
+  .paper th{ font-weight:normal; text-align:center; background:#eae5d8; }
+  .paper input, .paper select{
+    width:100%; border:none; background:transparent; font-family:inherit; font-size:11.5px;
+    padding:1px 2px; color:#111;
+  }
+  .paper input:focus, .paper select:focus{ outline:1px solid var(--accent); background:#fff8ea; }
+  .label-sm{ font-size:9.5px; color:#555; display:block; }
+  .center{ text-align:center; } .bold{ font-weight:bold; }
+  .stamp-note{ font-size:10px; color:#555; text-align:right; }
+  .title-row{ text-align:center; font-size:16px; font-weight:bold; margin:10px 0; }
+  .no-border{ border:none !important; }
+
+  .toolbar{ max-width:980px; margin:0 auto 14px; display:flex; gap:10px; flex-wrap:wrap; }
+  button{ padding:9px 16px; background:var(--accent); color:#1a1310; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; }
+  button.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--border); }
+  button.small{ padding:5px 10px; font-size:12px; }
+
+  .msg{ max-width:980px; margin:0 auto 14px; padding:10px 14px; border-radius:6px; font-size:13px; }
+  .msg.ok{ background:#1f3a1f; color:#a8e6a8; border:1px solid #2f5a2f; }
+  .msg.err{ background:#3a1f1f; color:#e6a8a8; border:1px solid #5a2f2f; }
+
+  .new-point{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; margin:8px auto; max-width:980px; }
+  .new-point select, .new-point input{ width:100%; padding:6px; margin-top:4px; background:#171310; color:var(--text); border:1px solid var(--border); border-radius:4px; }
+
+  .add-row-form{ max-width:980px; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
+  .add-row-form .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:8px; }
+  .add-row-form label{ font-size:11px; color:var(--dim); display:block; margin-bottom:2px; }
+  .add-row-form input, .add-row-form select{ width:100%; padding:6px; background:#171310; color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:13px; }
 </style>
 </head>
 <body>
 
 <div id="вхід">
+  <div class="eyebrow">Корпорація «Інтелект»</div>
   <h1>Дорожній лист</h1>
-  <p>Увійдіть через службовий Google-акаунт, щоб продовжити.</p>
-  <div id="googleBtn" style="display:flex; justify-content:center;"></div>
+  <p style="color:var(--dim)">Увійдіть через службовий Google-акаунт.</p>
+  <div id="googleBtn" style="display:flex; justify-content:center; margin-top:16px;"></div>
   <div id="вхід-помилка"></div>
 </div>
 
 <div id="основна" style="display:none;">
-  <h1>Дорожній лист</h1>
-  <div id="хто-увійшов" style="font-size:12px; color:#666; margin-bottom:10px;"></div>
+  <header class="top">
+    <div class="eyebrow">Корпорація «Інтелект»</div>
+    <h1>Дорожній лист</h1>
+    <div id="хто-увійшов" style="font-size:12px; color:var(--dim); margin-top:4px;"></div>
+  </header>
 
   <div class="tabs">
-    <div class="tab active" data-tab="шапка">Шапка</div>
-    <div class="tab" data-tab="поїздка">Поїздки</div>
-    <div class="tab" data-tab="пмм">ПММ</div>
+    <div class="tab active" data-tab="стор1">Сторінка 1</div>
+    <div class="tab" data-tab="стор2">Сторінка 2</div>
     <div class="tab" data-tab="excel">Excel</div>
   </div>
 
-  <!-- ==================== ШАПКА ==================== -->
-  <div id="панель-шапка" class="panel active card">
-    <h2>Створити дорожній лист</h2>
-    <div class="row2">
-      <div><label>№ документа</label><input id="л-номер"></div>
-      <div><label>Дійсний до</label><input id="л-дійснийдо" type="date"></div>
+  <!-- ==================== СТОРІНКА 1 (факсиміле) ==================== -->
+  <div id="панель-стор1" class="panel active">
+    <div class="paper">
+      <div class="stamp-note">Додаток 80<br>до Інструкції з обліку військового майна<br>у Збройних Силах України</div>
+      <table class="no-border" style="margin-bottom:4px;">
+        <tr class="no-border">
+          <td class="no-border" style="width:60%;">Дійсний до "<input id="л-дійснийдо-д" style="width:30px; display:inline; text-align:center;" placeholder="__">"
+            <input id="л-дійснийдо-м" style="width:70px; display:inline;" placeholder="місяць"> <input id="л-дійснийдо-р" style="width:60px; display:inline;" placeholder="2026" value="2026"> року</td>
+        </tr>
+      </table>
+      <div class="title-row">ДОРОЖНІЙ ЛИСТ № <input id="л-номер" style="width:100px; display:inline; text-align:center; font-weight:bold; font-size:15px; border-bottom:1px solid #333;"></div>
+      <table class="no-border">
+        <tr class="no-border"><td class="no-border" style="width:30%;">Військова частина (підрозділ)</td><td class="no-border"><input id="л-частина" placeholder="напр. A4219 2ББАК 1РБАК"></td></tr>
+        <tr class="no-border">
+          <td class="no-border">Водій<br><span class="label-sm">(звання, прізвище, ініціали)</span></td>
+          <td class="no-border"><select id="л-водій"></select></td>
+        </tr>
+        <tr class="no-border">
+          <td class="no-border">Старший машини<br><span class="label-sm">(звання, прізвище, ініціали)</span></td>
+          <td class="no-border"><input id="л-старшиймашини"></td>
+        </tr>
+        <tr class="no-border">
+          <td class="no-border">Маршрут руху</td>
+          <td class="no-border"><input id="л-маршрутзагальний" placeholder="автоматично зі списку поїздок, або впиши сам"></td>
+        </tr>
+        <tr class="no-border">
+          <td class="no-border">Начальник служби ВТ<br><span class="label-sm">(посада, звання, підпис, прізвище, ініціали)</span></td>
+          <td class="no-border"><input id="л-начальник"></td>
+        </tr>
+      </table>
+
+      <table style="margin-top:6px;">
+        <tr>
+          <td style="width:25%;">Машина технічно справна<br><span class="label-sm">старший технік (технік) підрозділу</span><br><input id="л-технікпіб" placeholder="звання, ПІБ"></td>
+          <td style="width:25%;">Технічний стан машини перевірив<br><span class="label-sm">начальник КТП</span><br><input id="л-ктппіб" placeholder="звання, ПІБ"></td>
+          <th colspan="2">Вибуття</th>
+          <th colspan="2">Прибуття</th>
+        </tr>
+        <tr>
+          <td><span class="label-sm">дата</span><input id="л-технікдата" type="date"></td>
+          <td><span class="label-sm">дата</span><input id="л-ктпдата" type="date"></td>
+          <th>дата/час</th><th>одометр</th><th>дата/час</th><th>одометр</th>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <td><input id="л-вибуттядата" type="datetime-local"></td>
+          <td><input id="л-вибуттяодометр" type="number"></td>
+          <td><input id="л-прибуттядата" type="datetime-local"></td>
+          <td><input id="л-прибуттяодометр" type="number"></td>
+        </tr>
+      </table>
+
+      <table style="margin-top:6px;">
+        <tr>
+          <th>Номер документа</th><th>Дата документа</th><th>Підстава (мета) виписки</th><th>Марка машини</th>
+          <th>Номерний знак машини</th><th>Марка причепа</th><th>Номерний знак причепа</th>
+          <th>Група експлуатації</th><th>Вантаж, що перевозиться</th><th>Маса вантажу, т</th>
+        </tr>
+        <tr>
+          <td id="показ-номер" class="center"></td>
+          <td><input id="л-дата" type="date"></td>
+          <td><input id="л-підстава" placeholder="розпор."></td>
+          <td><select id="л-машина"></select></td>
+          <td id="показ-держномер" class="center"></td>
+          <td><input id="л-причіп"></td>
+          <td><input id="л-причіпномер"></td>
+          <td id="показ-група" class="center"></td>
+          <td><input id="л-вантаж"></td>
+          <td><input id="л-масавантажу" type="number" step="0.1"></td>
+        </tr>
+      </table>
+
+      <div class="bold" style="margin-top:10px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
+      <table>
+        <tr>
+          <th>Найменування пального та мастильних матеріалів</th><th>Код номенклатури</th>
+          <th>Наявність перед виїздом</th><th>Отримано</th><th>Наявність під час постановки на стоянку</th>
+          <th>Витрачено</th><th>Належить за нормою</th><th>Економія</th><th>Перевитрата</th>
+        </tr>
+        <tbody id="таблиця-пмм"></tbody>
+      </table>
+      <button class="small secondary" onclick="document.getElementById('пмм-форма').style.display='block'">+ Додати ПММ</button>
     </div>
-    <label>Дата документа</label>
-    <input id="л-дата" type="date">
-    <label>Військова частина (підрозділ)</label>
-    <input id="л-частина" placeholder="напр. A4219 2ББАК 1РБАК">
-    <label>Машина</label>
-    <select id="л-машина"></select>
-    <label>Водій</label>
-    <select id="л-водій"></select>
-    <label>Старший машини (необов'язково)</label>
-    <input id="л-старшиймашини">
-    <label>Начальник служби ВТ (посада, звання, ПІБ)</label>
-    <input id="л-начальник">
-    <label>Підстава (мета) виписки</label>
-    <input id="л-підстава" placeholder="напр. розпор.">
-    <div class="row2">
-      <div><label>Марка причепа (необов'язково)</label><input id="л-причіп"></div>
-      <div><label>Номерний знак причепа</label><input id="л-причіпномер"></div>
+
+    <div id="пмм-форма" class="add-row-form" style="display:none;">
+      <div class="grid">
+        <div><label>Найменування ПММ</label><input id="м-найменування" placeholder="напр. ДП-1-Євро5 BO"></div>
+        <div><label>Наявність перед виїздом (л)</label><input id="м-наявність" type="number" step="0.1"></div>
+        <div><label>Отримано (л)</label><input id="м-отримано" type="number" step="0.1"></div>
+        <div><label>Наявність на стоянці — факт (л)</label><input id="м-наявністьфакт" type="number" step="0.1"></div>
+      </div>
+      <button onclick="зберегтиПММКлієнт()">Перевірити і додати рядок</button>
+      <div id="м-повідомлення"></div>
     </div>
-    <div class="row2">
-      <div><label>Вантаж, що перевозиться</label><input id="л-вантаж"></div>
-      <div><label>Маса вантажу, т</label><input id="л-масавантажу" type="number" step="0.1"></div>
-    </div>
-    <div class="row2">
-      <div><label>Старший технік — ПІБ</label><input id="л-технікпіб"></div>
-      <div><label>дата</label><input id="л-технікдата" type="date"></div>
-    </div>
-    <div class="row2">
-      <div><label>Начальник КТП — ПІБ</label><input id="л-ктппіб"></div>
-      <div><label>дата</label><input id="л-ктпдата" type="date"></div>
-    </div>
-    <div class="row2">
-      <div><label>Вибуття: дата/час</label><input id="л-вибуттядата" type="datetime-local"></div>
-      <div><label>Одометр</label><input id="л-вибуттяодометр" type="number"></div>
-    </div>
-    <div class="row2">
-      <div><label>Прибуття: дата/час</label><input id="л-прибуттядата" type="datetime-local"></div>
-      <div><label>Одометр</label><input id="л-прибуттяодометр" type="number"></div>
-    </div>
-    <button onclick="створитиЛист()">Створити дорожній лист</button>
-    <div id="л-повідомлення"></div>
   </div>
 
-  <!-- ==================== ПОЇЗДКА ==================== -->
-  <div id="панель-поїздка" class="panel card">
-    <h2>Додати поїздку</h2>
-    <label>Маршрут (пункти через "→", напр. Ізюм → Балаклія → Ізюм)</label>
-    <input id="п-маршрут" placeholder="Ізюм → Балаклія → Ізюм">
-    <div class="row2">
-      <div><label>Вибуття</label><input id="п-вибуття" type="datetime-local"></div>
-      <div><label>Прибуття</label><input id="п-прибуття" type="datetime-local"></div>
-    </div>
-    <div class="row2">
-      <div><label>Мотогодини</label><input id="п-мотогодини" type="number"></div>
-      <div><label>Вантаж (необов'язково)</label><input id="п-вантаж"></div>
-    </div>
-    <label>Показання спідометра</label>
-    <input id="п-спідометр" type="number">
-    <button onclick="розрахуватиМаршрутКлієнт()">Розрахувати маршрут</button>
-    <div id="п-нові-пункти"></div>
-    <div id="п-підсумок"></div>
-    <div id="п-повідомлення"></div>
-    <div id="п-список"></div>
-  </div>
+  <!-- ==================== СТОРІНКА 2 (факсиміле) ==================== -->
+  <div id="панель-стор2" class="panel">
+    <div class="paper">
+      <div class="bold center" style="margin-bottom:6px;">2. Робота машини</div>
+      <table>
+        <tr>
+          <th rowspan="3">Маршрут руху (звідки, куди)</th>
+          <th colspan="2">Дата і час (години, хвилини)</th>
+          <th colspan="5">Пройдено кілометрів</th>
+          <th colspan="3">Відпрацьовано мотогодин</th>
+          <th colspan="2">Виконана робота</th>
+          <th rowspan="3">Показання спідометра, час і місце відпускання машини, підпис старшого машини</th>
+        </tr>
+        <tr>
+          <th rowspan="2">вибуття</th><th rowspan="2">прибуття</th>
+          <th rowspan="2">з вантажем</th><th rowspan="2">без вантажу</th><th rowspan="2">усього</th>
+          <th colspan="2">у тому числі</th>
+          <th rowspan="2">на місці</th><th rowspan="2">під час руху</th><th rowspan="2">усього</th>
+          <th rowspan="2">найменування вантажу</th><th rowspan="2">кількість, т</th>
+        </tr>
+        <tr><th>з причепом</th><th>на буксирі (на плаву)</th></tr>
+        <tr>
+          <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th>
+        </tr>
+        <tbody id="таблиця-поїздки"></tbody>
+      </table>
+      <button class="small secondary" onclick="document.getElementById('поїздка-форма').style.display='block'">+ Додати поїздку</button>
 
-  <!-- ==================== ПММ ==================== -->
-  <div id="панель-пмм" class="panel card">
-    <h2>Додати запис ПММ</h2>
-    <label>Найменування ПММ</label>
-    <input id="м-найменування" placeholder="напр. ДП-1-Євро5 BO">
-    <div class="row2">
-      <div><label>Наявність перед виїздом (л)</label><input id="м-наявність" type="number" step="0.1"></div>
-      <div><label>Отримано (л)</label><input id="м-отримано" type="number" step="0.1"></div>
+      <table class="no-border" style="margin-top:16px;">
+        <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________</td></tr>
+        <tr class="no-border"><td class="no-border">Правильність оформлення дорожнього листа перевірив ______________________</td></tr>
+      </table>
     </div>
-    <label>Наявність на стоянці — факт (л, заповнити після рейсу)</label>
-    <input id="м-наявністьфакт" type="number" step="0.1">
-    <button onclick="зберегтиПММКлієнт()">Перевірити і зберегти</button>
-    <div id="м-повідомлення"></div>
-    <div id="м-список"></div>
+
+    <div id="поїздка-форма" class="add-row-form" style="display:none;">
+      <div class="grid">
+        <div style="grid-column:1/-1;"><label>Маршрут (пункти через "→")</label><input id="п-маршрут" placeholder="Ізюм → Балаклія → Ізюм"></div>
+        <div><label>Вибуття</label><input id="п-вибуття" type="datetime-local"></div>
+        <div><label>Прибуття</label><input id="п-прибуття" type="datetime-local"></div>
+        <div><label>Мотогодини</label><input id="п-мотогодини" type="number"></div>
+        <div><label>Найменування вантажу</label><input id="п-вантаж"></div>
+        <div><label>Кількість, т</label><input id="п-вантажкількість" type="number" step="0.1"></div>
+        <div><label>Показання спідометра</label><input id="п-спідометр" type="number"></div>
+      </div>
+      <button onclick="розрахуватиМаршрутКлієнт()">Розрахувати маршрут</button>
+      <div id="п-нові-пункти"></div>
+      <div id="п-підсумок"></div>
+      <div id="п-повідомлення"></div>
+    </div>
   </div>
 
   <!-- ==================== EXCEL ==================== -->
-  <div id="панель-excel" class="panel card">
-    <h2>Сформувати документ</h2>
-    <p>Перевір, що шапку створено, всі поїздки й ПММ внесено — тоді тисни кнопку. Норма витрати ПММ у документ не потрапляє, лише результати розрахунку.</p>
-    <button onclick="згенеруватиExcel()">Згенерувати Excel</button>
-    <div id="excel-повідомлення"></div>
+  <div id="панель-excel" class="panel">
+    <div class="add-row-form" style="max-width:980px;">
+      <h2 style="margin-top:0;">Сформувати документ</h2>
+      <p style="color:var(--dim); font-size:13px;">Перевір обидві сторінки — тоді тисни. Норма витрати ПММ у документ не потрапляє, лише результати розрахунку.</p>
+      <button onclick="згенеруватиExcel()">Згенерувати Excel</button>
+      <div id="excel-повідомлення"></div>
+    </div>
   </div>
 </div>
 
 <script>
-// ==================== КОНФІГУРАЦІЯ — ВПИШИ СВОЇ ЗНАЧЕННЯ ====================
+// ==================== КОНФІГУРАЦІЯ ====================
 const CONFIG = {
   GOOGLE_CLIENT_ID: '359913599174-l5djl2urdlhk0u4801fee9gmd2g84sll.apps.googleusercontent.com',
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxTePyTVs75HKMDkbVLSWEjOXhDuuSy_LmhC3tYm99onZDM7whY69kPvFtB1gIz4KM_/exec'
@@ -156,7 +261,6 @@ let обраМашина = null;
 let списокПоїздок = [];
 let списокПММ = [];
 
-// ---------- Вхід через Google ----------
 function handleCredentialResponse(response) {
   googleToken = response.credential;
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
@@ -167,14 +271,10 @@ function handleCredentialResponse(response) {
 }
 
 window.addEventListener('load', () => {
-  google.accounts.id.initialize({
-    client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse
-  });
-  google.accounts.id.renderButton(document.getElementById('googleBtn'), { theme: 'outline', size: 'large', text: 'signin_with' });
+  google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: handleCredentialResponse });
+  google.accounts.id.renderButton(document.getElementById('googleBtn'), { theme: 'filled_black', size: 'large', text: 'signin_with' });
 });
 
-// ---------- Вкладки ----------
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -184,12 +284,11 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// ---------- Виклик API ----------
 async function викликАРІ(дія, параметри) {
   const тіло = Object.assign({ дія: дія, токен: googleToken }, параметри || {});
   const відповідь = await fetch(CONFIG.APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // уникаємо CORS-preflight
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(тіло)
   });
   const результат = await відповідь.json();
@@ -201,7 +300,6 @@ function повідомлення(id, текст, ок) {
   document.getElementById(id).innerHTML = `<div class="msg ${ок ? 'ok' : 'err'}">${текст}</div>`;
 }
 
-// ---------- Довідники ----------
 async function завантажитиДовідники() {
   try {
     const д = await викликАРІ('отриматиДовідники');
@@ -209,12 +307,12 @@ async function завантажитиДовідники() {
     селМашина.innerHTML = '';
     (д.машиниДеталі || []).forEach(м => {
       const о = document.createElement('option');
-      о.value = м.держНомер;
-      о.textContent = `${м.держНомер} — ${м.марка}`;
-      о.dataset.марка = м.марка;
-      о.dataset.група = м.групаЕксплуатації || '';
+      о.value = м.держНомер; о.textContent = м.держНомер;
+      о.dataset.марка = м.марка; о.dataset.група = м.групаЕксплуатації || '';
       селМашина.appendChild(о);
     });
+    оновитиПоказМашини();
+    селМашина.addEventListener('change', оновитиПоказМашини);
 
     const селВодій = document.getElementById('л-водій');
     селВодій.innerHTML = '';
@@ -228,27 +326,18 @@ async function завантажитиДовідники() {
   }
 }
 
-// ---------- Шапка ----------
-async function створитиЛист() {
-  const селМашина = document.getElementById('л-машина');
-  const опція = селМашина.options[селМашина.selectedIndex];
-  const дані = {
-    номерДокумента: document.getElementById('л-номер').value,
-    дата: document.getElementById('л-дата').value,
-    дійснийДо: document.getElementById('л-дійснийдо').value,
-    держНомер: селМашина.value,
-    водій: document.getElementById('л-водій').value,
-    підстава: document.getElementById('л-підстава').value,
-    одометр: document.getElementById('л-вибуттяодометр').value
-  };
-  try {
-    await викликАРІ('створитиДорожнійЛист', { дані });
-    обраМашина = { держНомер: селМашина.value, марка: опція ? опція.dataset.марка : '', група: опція ? опція.dataset.група : '' };
-    повідомлення('л-повідомлення', 'Дорожній лист створено. Можеш переходити до вкладки "Поїздки".', true);
-  } catch (е) {
-    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
-  }
+function оновитиПоказМашини() {
+  const сел = document.getElementById('л-машина');
+  const опція = сел.options[сел.selectedIndex];
+  if (!опція) return;
+  обраМашина = { держНомер: сел.value, марка: опція.dataset.марка, група: опція.dataset.група };
+  document.getElementById('показ-держномер').textContent = обраМашина.держНомер;
+  document.getElementById('показ-група').textContent = обраМашина.група;
 }
+
+document.getElementById('л-номер') && document.getElementById('л-номер').addEventListener('input', function() {
+  document.getElementById('показ-номер').textContent = this.value;
+});
 
 // ---------- Поїздка ----------
 async function розрахуватиМаршрутКлієнт() {
@@ -272,7 +361,7 @@ async function розрахуватиМаршрутКлієнт() {
 
 function показатиФормуНовихПунктів(нові) {
   const контейнер = document.getElementById('п-нові-пункти');
-  контейнер.innerHTML = '<p><b>Нові населені пункти — перевір категорію й довжину проїзду:</b></p>';
+  контейнер.innerHTML = '<p><b>Нові населені пункти:</b></p>';
   нові.forEach((п, i) => {
     const авто = п.довжинаАвто;
     контейнер.innerHTML += `
@@ -283,10 +372,9 @@ function показатиФормуНовихПунктів(нові) {
           <option value="Місто з регульованими перехрестями">З регульованими перехрестями</option>
           <option value="Обласний центр">Обласний центр</option>
         </select>
-        <input id="нп-довжина-${i}" type="number" step="0.1"
-          value="${авто != null ? авто : ''}"
+        <input id="нп-довжина-${i}" type="number" step="0.1" value="${авто != null ? авто : ''}"
           placeholder="${авто != null ? '' : 'Межі не знайдено — вкажи орієнтовно, км'}">
-        <small>${авто != null ? 'Розраховано автоматично, можна відкоригувати' : '⚠ Межі не знайдено — вкажи сам'}</small>
+        <small>${авто != null ? 'Розраховано автоматично' : '⚠ Вкажи сам'}</small>
       </div>`;
   });
   контейнер.innerHTML += '<div id="п-кнопка-нові"></div>';
@@ -313,12 +401,10 @@ async function зберегтиНовіПунктиІПерерахувати(н
 
 function показатиПідсумокПоїздки(підсумок) {
   document.getElementById('п-підсумок').innerHTML = `
-    <div class="summary">
-      <b>Усього:</b> ${підсумок.всього.toFixed(1)} км<br>
-      Траса: ${підсумок['Траса'].toFixed(1)} км<br>
-      Місто без регулювання: ${підсумок['Населений пункт без регульованих перехресть'].toFixed(1)} км<br>
-      Місто з регулюванням: ${підсумок['Місто з регульованими перехрестями'].toFixed(1)} км<br>
-      Обласний центр: ${підсумок['Обласний центр'].toFixed(1)} км
+    <div style="background:#171310; border:1px solid var(--border); padding:10px; border-radius:6px; margin-top:8px;">
+      <b>Усього:</b> ${підсумок.всього.toFixed(1)} км —
+      траса ${підсумок['Траса'].toFixed(1)}, без регул. ${підсумок['Населений пункт без регульованих перехресть'].toFixed(1)},
+      з регул. ${підсумок['Місто з регульованими перехрестями'].toFixed(1)}, обл.центр ${підсумок['Обласний центр'].toFixed(1)}
     </div>
     <button onclick="зберегтиПоїздкуКлієнт()">Зберегти поїздку</button>`;
 }
@@ -331,25 +417,44 @@ async function зберегтиПоїздкуКлієнт() {
     прибуття: document.getElementById('п-прибуття').value,
     мотогодини: document.getElementById('п-мотогодини').value,
     вантаж: document.getElementById('п-вантаж').value,
+    вантажКількість: document.getElementById('п-вантажкількість').value,
     спідометр: document.getElementById('п-спідометр').value,
     підсумок: підсумокПоточноїПоїздки
   };
   try {
     await викликАРІ('зберегтиПоїздку', { дані: дані });
     списокПоїздок.push(дані);
-    оновитиСписокПоїздок();
-    повідомлення('п-повідомлення', 'Поїздку збережено.', true);
+    домалюватиРядокПоїздки(дані);
+    document.getElementById('л-маршрутзагальний').value = списокПоїздок.map(п => п.маршрутТекст).join('; ');
+    повідомлення('п-повідомлення', 'Поїздку додано в таблицю.', true);
     document.getElementById('п-підсумок').innerHTML = '';
     document.getElementById('п-маршрут').value = '';
+    document.getElementById('поїздка-форма').style.display = 'none';
     підсумокПоточноїПоїздки = null;
   } catch (е) {
     повідомлення('п-повідомлення', 'Помилка: ' + е.message, false);
   }
 }
 
-function оновитиСписокПоїздок() {
-  document.getElementById('п-список').innerHTML = '<h2>Внесені поїздки</h2>' +
-    списокПоїздок.map(п => `<div class="list-item">${п.маршрутТекст} — ${п.підсумок.всього.toFixed(1)} км</div>`).join('');
+function домалюватиРядокПоїздки(п) {
+  const тіло = document.getElementById('таблиця-поїздки');
+  const тр = document.createElement('tr');
+  const п2 = п.підсумок;
+  [
+    п.маршрутТекст, форматДата(п.вибуття), форматДата(п.прибуття),
+    '', '', п2.всього.toFixed(1), '', '',
+    '', '', п.мотогодини || '', п.вантаж || '', п.вантажКількість || '', п.спідометр || ''
+  ].forEach(зн => {
+    const td = document.createElement('td');
+    td.textContent = зн; td.classList.add('center');
+    тр.appendChild(td);
+  });
+  тіло.appendChild(тр);
+}
+
+function форматДата(значення) {
+  if (!значення) return '';
+  return значення.replace('T', ' ');
 }
 
 // ---------- ПММ ----------
@@ -368,20 +473,31 @@ async function зберегтиПММКлієнт() {
       витрачено: наявністьФакт !== '' ? (Number(дані.наявністьПеред) + Number(дані.отримано) - Number(наявністьФакт)) : null
     });
     списокПММ.push(запис);
-    оновитиСписокПММ();
-    повідомлення('м-повідомлення', 'Запис збережено. Належить за нормою: ' + результат.належитьЗаНормою.toFixed(1) + ' л.', true);
+    домалюватиРядокПММ(запис);
+    повідомлення('м-повідомлення', 'Додано. Належить за нормою: ' + результат.належитьЗаНормою.toFixed(1) + ' л.', true);
     document.getElementById('м-найменування').value = '';
     document.getElementById('м-наявність').value = '';
     document.getElementById('м-отримано').value = '';
     document.getElementById('м-наявністьфакт').value = '';
+    document.getElementById('пмм-форма').style.display = 'none';
   } catch (е) {
     повідомлення('м-повідомлення', е.message, false);
   }
 }
 
-function оновитиСписокПММ() {
-  document.getElementById('м-список').innerHTML = '<h2>Внесені записи ПММ</h2>' +
-    списокПММ.map(п => `<div class="list-item">${п.найменування} — належить ${п.належитьЗаНормою.toFixed(1)} л${п.витрачено != null ? ', витрачено ' + п.витрачено.toFixed(1) + ' л' : ''}</div>`).join('');
+function домалюватиРядокПММ(п) {
+  const тіло = document.getElementById('таблиця-пмм');
+  const тр = document.createElement('tr');
+  const економія = п.витрачено != null ? Math.max(0, п.належитьЗаНормою - п.витрачено).toFixed(1) : '';
+  const перевитрата = п.витрачено != null ? Math.max(0, п.витрачено - п.належитьЗаНормою).toFixed(1) : '';
+  [п.найменування, '', п.наявністьПеред, п.отримано, п.наявністьФакт,
+   п.витрачено != null ? п.витрачено.toFixed(1) : '', п.належитьЗаНормою.toFixed(1), економія, перевитрата
+  ].forEach(зн => {
+    const td = document.createElement('td');
+    td.textContent = зн; td.classList.add('center');
+    тр.appendChild(td);
+  });
+  тіло.appendChild(тр);
 }
 
 // ---------- Генерація Excel ----------
@@ -389,88 +505,114 @@ async function згенеруватиExcel() {
   try {
     const workbook = new ExcelJS.Workbook();
     const межа = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
+    const заголовокСтиль = { bold: true };
+    const заголовокФон = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAE5D8' } };
 
-    // ---- Сторінка 1: шапка + ПММ ----
+    // ================= СТОРІНКА 1 =================
     const с1 = workbook.addWorksheet('Сторінка 1');
-    с1.columns = Array(9).fill({ width: 13 });
+    с1.getColumn(1).width = 26; for (let c = 2; c <= 10; c++) с1.getColumn(c).width = 13;
 
-    с1.mergeCells('A1:I1');
+    с1.mergeCells('A1:J1');
     с1.getCell('A1').value = 'ДОРОЖНІЙ ЛИСТ № ' + document.getElementById('л-номер').value;
     с1.getCell('A1').font = { bold: true, size: 14 };
     с1.getCell('A1').alignment = { horizontal: 'center' };
 
-    const шапкаРядки = [
-      ['Дійсний до', document.getElementById('л-дійснийдо').value],
+    let r = 3;
+    const шапка = [
+      ['Дійсний до', [document.getElementById('л-дійснийдо-д').value, document.getElementById('л-дійснийдо-м').value, document.getElementById('л-дійснийдо-р').value].filter(Boolean).join(' ')],
       ['Військова частина (підрозділ)', document.getElementById('л-частина').value],
       ['Водій', document.getElementById('л-водій').value],
       ['Старший машини', document.getElementById('л-старшиймашини').value],
-      ['Маршрут руху', списокПоїздок.map(п => п.маршрутТекст).join('; ')],
+      ['Маршрут руху', document.getElementById('л-маршрутзагальний').value],
       ['Начальник служби ВТ', document.getElementById('л-начальник').value],
-      ['Марка машини', обраМашина ? обраМашина.марка : ''],
-      ['Номерний знак машини', обраМашина ? обраМашина.держНомер : ''],
-      ['Марка причепа', document.getElementById('л-причіп').value],
-      ['Номерний знак причепа', document.getElementById('л-причіпномер').value],
-      ['Група експлуатації', обраМашина ? обраМашина.група : ''],
-      ['Вантаж, що перевозиться', document.getElementById('л-вантаж').value],
-      ['Маса вантажу, т', document.getElementById('л-масавантажу').value],
-      ['Підстава (мета) виписки', document.getElementById('л-підстава').value],
+      ['Старший технік підрозділу', document.getElementById('л-технікпіб').value],
+      ['Начальник КТП', document.getElementById('л-ктппіб').value],
       ['Вибуття: дата/час', document.getElementById('л-вибуттядата').value],
       ['Вибуття: одометр', document.getElementById('л-вибуттяодометр').value],
       ['Прибуття: дата/час', document.getElementById('л-прибуттядата').value],
       ['Прибуття: одометр', document.getElementById('л-прибуттяодометр').value]
     ];
-    let рядок = 3;
-    шапкаРядки.forEach(([назва, значення]) => {
-      с1.getCell('A' + рядок).value = назва;
-      с1.getCell('A' + рядок).font = { bold: true };
-      с1.mergeCells('B' + рядок + ':I' + рядок);
-      с1.getCell('B' + рядок).value = значення || '';
-      рядок++;
+    шапка.forEach(([назва, значення]) => {
+      с1.getCell('A' + r).value = назва; с1.getCell('A' + r).font = { bold: true };
+      с1.mergeCells('B' + r + ':J' + r);
+      с1.getCell('B' + r).value = значення || '';
+      r++;
     });
 
-    рядок += 1;
-    с1.getCell('A' + рядок).value = '1. Витрата пального і мастильних матеріалів (у літрах)';
-    с1.getCell('A' + рядок).font = { bold: true };
-    рядок++;
-    const заголовкиПММ = ['Найменування', 'Наявність перед виїздом', 'Отримано', 'Наявність на стоянці', 'Витрачено', 'Належить за нормою', 'Економія', 'Перевитрата'];
-    заголовкиПММ.forEach((з, i) => {
-      const клітина = с1.getCell(рядок, i + 1);
-      клітина.value = з; клітина.font = { bold: true }; клітина.border = межа;
-      клітина.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } };
+    r++;
+    const реквізити = ['№ документа', 'Дата документа', 'Підстава (мета)', 'Марка машини', 'Номерний знак',
+      'Марка причепа', 'Номерний знак причепа', 'Група експлуатації', 'Вантаж', 'Маса вантажу, т'];
+    реквізити.forEach((з, i) => {
+      const кл = с1.getCell(r, i + 1); кл.value = з; кл.font = заголовокСтиль; кл.border = межа; кл.fill = заголовокФон;
     });
-    рядок++;
+    r++;
+    [
+      document.getElementById('л-номер').value, document.getElementById('л-дата').value, document.getElementById('л-підстава').value,
+      обраМашина ? обраМашина.марка : '', обраМашина ? обраМашина.держНомер : '',
+      document.getElementById('л-причіп').value, document.getElementById('л-причіпномер').value,
+      обраМашина ? обраМашина.група : '', document.getElementById('л-вантаж').value, document.getElementById('л-масавантажу').value
+    ].forEach((зн, i) => { const кл = с1.getCell(r, i + 1); кл.value = зн; кл.border = межа; });
+    r += 2;
+
+    с1.getCell('A' + r).value = '1. Витрата пального і мастильних матеріалів (у літрах)';
+    с1.getCell('A' + r).font = { bold: true };
+    r++;
+    const заголовкиПММ = ['Найменування', 'Код номенклатури', 'Наявність перед виїздом', 'Отримано',
+      'Наявність на стоянці', 'Витрачено', 'Належить за нормою', 'Економія', 'Перевитрата'];
+    заголовкиПММ.forEach((з, i) => { const кл = с1.getCell(r, i + 1); кл.value = з; кл.font = заголовокСтиль; кл.border = межа; кл.fill = заголовокФон; });
+    r++;
     списокПММ.forEach(п => {
       const економія = п.витрачено != null ? Math.max(0, п.належитьЗаНормою - п.витрачено) : '';
       const перевитрата = п.витрачено != null ? Math.max(0, п.витрачено - п.належитьЗаНормою) : '';
-      const значення = [п.найменування, п.наявністьПеред, п.отримано, п.наявністьФакт, п.витрачено != null ? п.витрачено.toFixed(1) : '', п.належитьЗаНормою.toFixed(1), економія, перевитрата];
-      значення.forEach((зн, i) => {
-        const клітина = с1.getCell(рядок, i + 1);
-        клітина.value = зн; клітина.border = межа;
-      });
-      рядок++;
+      [п.найменування, '', п.наявністьПеред, п.отримано, п.наявністьФакт,
+       п.витрачено != null ? п.витрачено.toFixed(1) : '', п.належитьЗаНормою.toFixed(1), економія, перевитрата
+      ].forEach((зн, i) => { const кл = с1.getCell(r, i + 1); кл.value = зн; кл.border = межа; });
+      r++;
     });
 
-    // ---- Сторінка 2: Розділ 2, поїздки ----
+    // ================= СТОРІНКА 2 =================
     const с2 = workbook.addWorksheet('Сторінка 2');
-    с2.columns = Array(10).fill({ width: 14 });
-    const заголовкиПоїздок = ['Маршрут', 'Вибуття', 'Прибуття', 'КМ усього', 'КМ траса', 'Місто без регул.', 'Місто з регул.', 'Обл. центр', 'Мотогодини', 'Спідометр'];
-    заголовкиПоїздок.forEach((з, i) => {
-      const клітина = с2.getCell(1, i + 1);
-      клітина.value = з; клітина.font = { bold: true }; клітина.border = межа;
-      клітина.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } };
+    for (let c = 1; c <= 14; c++) с2.getColumn(c).width = c === 1 || c === 14 ? 22 : 11;
+
+    с2.mergeCells('A1:A3'); с2.getCell('A1').value = 'Маршрут руху (звідки, куди)';
+    с2.mergeCells('B1:C1'); с2.getCell('B1').value = 'Дата і час (години, хвилини)';
+    с2.mergeCells('D1:H1'); с2.getCell('D1').value = 'Пройдено кілометрів';
+    с2.mergeCells('I1:K1'); с2.getCell('I1').value = 'Відпрацьовано мотогодин';
+    с2.mergeCells('L1:M1'); с2.getCell('L1').value = 'Виконана робота';
+    с2.mergeCells('N1:N3'); с2.getCell('N1').value = 'Показання спідометра, час і місце відпускання машини, підпис старшого машини';
+
+    с2.mergeCells('B2:B3'); с2.getCell('B2').value = 'вибуття';
+    с2.mergeCells('C2:C3'); с2.getCell('C2').value = 'прибуття';
+    с2.mergeCells('D2:D3'); с2.getCell('D2').value = 'з вантажем';
+    с2.mergeCells('E2:E3'); с2.getCell('E2').value = 'без вантажу';
+    с2.mergeCells('F2:F3'); с2.getCell('F2').value = 'усього';
+    с2.mergeCells('G2:H2'); с2.getCell('G2').value = 'у тому числі';
+    с2.mergeCells('I2:I3'); с2.getCell('I2').value = 'на місці';
+    с2.mergeCells('J2:J3'); с2.getCell('J2').value = 'під час руху';
+    с2.mergeCells('K2:K3'); с2.getCell('K2').value = 'усього';
+    с2.mergeCells('L2:L3'); с2.getCell('L2').value = 'найменування вантажу';
+    с2.mergeCells('M2:M3'); с2.getCell('M2').value = 'кількість, т';
+    с2.getCell('G3').value = 'з причепом'; с2.getCell('H3').value = 'на буксирі (на плаву)';
+
+    for (let c = 1; c <= 14; c++) {
+      [1,2,3].forEach(rr => { const кл = с2.getCell(rr, c); кл.border = межа; кл.font = заголовокСтиль; кл.fill = заголовокФон; кл.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; });
+      const кл4 = с2.getCell(4, c); кл4.value = c; кл4.border = межа; кл4.alignment = { horizontal:'center' }; кл4.fill = заголовокФон;
+    }
+
+    let r2 = 5;
+    списокПоїздок.forEach(п => {
+      const п2 = п.підсумок;
+      [
+        п.маршрутТекст, п.вибуття, п.прибуття, '', '', п2.всього.toFixed(1), '', '',
+        '', '', п.мотогодини || '', п.вантаж || '', п.вантажКількість || '', п.спідометр || ''
+      ].forEach((зн, i) => { const кл = с2.getCell(r2, i + 1); кл.value = зн; кл.border = межа; });
+      r2++;
     });
-    списокПоїздок.forEach((п, idx) => {
-      const значення = [
-        п.маршрутТекст, п.вибуття, п.прибуття, п.підсумок.всього.toFixed(1), п.підсумок['Траса'].toFixed(1),
-        п.підсумок['Населений пункт без регульованих перехресть'].toFixed(1),
-        п.підсумок['Місто з регульованими перехрестями'].toFixed(1),
-        п.підсумок['Обласний центр'].toFixed(1), п.мотогодини || '', п.спідометр || ''
-      ];
-      значення.forEach((зн, i) => {
-        const клітина = с2.getCell(idx + 2, i + 1);
-        клітина.value = зн; клітина.border = межа;
-      });
-    });
+
+    r2 += 2;
+    с2.getCell('A' + r2).value = 'Водій (механік-водій) ______________________';
+    r2++;
+    с2.getCell('A' + r2).value = 'Правильність оформлення дорожнього листа перевірив ______________________';
 
     const буфер = await workbook.xlsx.writeBuffer();
     const блоб = new Blob([буфер], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
