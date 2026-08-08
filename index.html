@@ -186,9 +186,9 @@
       <div class="bold" style="margin-top:6px; font-size:11px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
       <table>
         <colgroup>
-          <col style="width:20.06%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
+          <col style="width:18.56%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
           <col style="width:12.42%"><col style="width:9.55%"><col style="width:9.55%"><col style="width:8.60%">
-          <col style="width:9.24%"><col style="width:16px">
+          <col style="width:9.24%"><col style="width:1.5%">
         </colgroup>
         <tr>
           <th>Найменування пального та мастильних матеріалів</th><th>Код номенклатури</th>
@@ -212,10 +212,10 @@
       </table>
       <table>
         <colgroup>
-          <col style="width:26.62%"><col style="width:6.44%"><col style="width:6.44%">
+          <col style="width:25.12%"><col style="width:6.44%"><col style="width:6.44%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
-          <col style="width:14.47%"><col style="width:16px">
+          <col style="width:14.47%"><col style="width:1.5%">
         </colgroup>
         <tr>
           <th rowspan="3">Маршрут руху (звідки, куди)</th>
@@ -348,7 +348,7 @@ function побудуватиТаблиці() {
     const тр = document.createElement('tr');
     тр.id = 'поїздка-рядок-' + i;
     тр.innerHTML = `
-      <td><div class="route-cell"><input id="поїздка-${i}-маршрут" placeholder="Ізюм - Балаклія - Ізюм">
+      <td><div class="route-cell"><input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
         <button class="calc-btn" onclick="розрахуватиРядок(${i})">🧮</button></div></td>
       <td><input id="поїздка-${i}-вибуття" type="datetime-local"></td>
       <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
@@ -491,7 +491,7 @@ function алертРядок(id, текст) {
 // ==================== ПОЇЗДКИ: РЯДКИ ====================
 async function розрахуватиРядок(i) {
   const текст = document.getElementById(`поїздка-${i}-маршрут`).value;
-  const пункти = текст.split('-').map(п => п.trim()).filter(Boolean);
+  const пункти = текст.split('/').map(п => п.trim()).filter(Boolean);
   if (пункти.length < 2) { повідомлення('л-повідомлення', 'Вкажи щонайменше два пункти в маршруті рядка ' + (i+1), false); return; }
 
   const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
