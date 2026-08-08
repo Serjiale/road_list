@@ -6,6 +6,8 @@
 <title>Дорожній лист</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="docx-bundle.js"></script>
 <style>
   :root{
@@ -644,6 +646,11 @@ async function розрахуватиРядок(i) {
       кнопка.disabled = false; кнопка.textContent = '🧮';
       return;
     }
+    if (результат.потрібенВибірМаршруту) {
+      показатиВиборМаршрутуВРядку(i, результат);
+      кнопка.disabled = false; кнопка.textContent = '🧮';
+      return;
+    }
     await зберегтиРядокПоїздки(i, результат.підсумок);
     кнопка.textContent = '✓';
   } catch (е) {
@@ -686,6 +693,77 @@ function показатиКласифікаціюВРядку(i, нові) {
 function прибратиКласифікаціюВРядку(i) {
   const існуючий = document.getElementById('класифікація-' + i);
   if (існуючий) існуючий.remove();
+  const існуючаКарта = document.getElementById('вибір-маршруту-' + i);
+  if (існуючаКарта) існуючаКарта.remove();
+}
+
+// ---------- Вибір маршруту на карті, коли варіанти суттєво відрізняються ----------
+const КОЛЬОРИ_ВАРІАНТІВ = ['#d97b34', '#4a86c8', '#2e9e5b'];
+
+function показатиВиборМаршрутуВРядку(i, дані) {
+  прибратиКласифікаціюВРядку(i);
+  const рядок = document.createElement('tr');
+  рядок.className = 'classify-row';
+  рядок.id = 'вибір-маршруту-' + i;
+  const td = document.createElement('td');
+  td.colSpan = 15;
+
+  const заголовок = document.createElement('div');
+  заголовок.innerHTML = `<b>Маршрут ${дані.відрізок.від} → ${дані.відрізок.до}: варіанти суттєво відрізняються — обери:</b>`;
+  td.appendChild(заголовок);
+
+  const картаDiv = document.createElement('div');
+  картаDiv.id = 'мапа-' + i;
+  картаDiv.style.height = '320px';
+  картаDiv.style.margin = '8px 0';
+  картаDiv.style.borderRadius = '6px';
+  td.appendChild(картаDiv);
+
+  const кнопкиDiv = document.createElement('div');
+  кнопкиDiv.style.display = 'flex';
+  кнопкиDiv.style.gap = '8px';
+  кнопкиDiv.style.flexWrap = 'wrap';
+  td.appendChild(кнопкиDiv);
+
+  рядок.appendChild(td);
+  document.getElementById('поїздка-рядок-' + i).after(рядок);
+
+  const карта = L.map('мапа-' + i).setView([дані.центр.lat, дані.центр.lon], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 18
+  }).addTo(карта);
+
+  const усіЛінії = [];
+  дані.варіанти.forEach((в, idx) => {
+    const латлонги = в.geometry.map(коорд => [коорд[1], коорд[0]]); // [lon,lat] -> [lat,lon]
+    const колір = КОЛЬОРИ_ВАРІАНТІВ[idx % КОЛЬОРИ_ВАРІАНТІВ.length];
+    const лінія = L.polyline(латлонги, { color: колір, weight: 5, opacity: 0.75 }).addTo(карта);
+    лінія.bindTooltip(`Варіант ${idx + 1}: ${в.км.toFixed(1)} км`);
+    лінія.on('click', () => обратиВаріантМаршруту(i, дані.відрізок, в.км));
+    лінія.on('mouseover', () => лінія.setStyle({ weight: 8, opacity: 1 }));
+    лінія.on('mouseout', () => лінія.setStyle({ weight: 5, opacity: 0.75 }));
+    усіЛінії.push(лінія);
+
+    const кнопка = document.createElement('button');
+    кнопка.className = 'calc-btn';
+    кнопка.style.background = колір;
+    кнопка.textContent = `Варіант ${idx + 1} — ${в.км.toFixed(1)} км`;
+    кнопка.onclick = () => обратиВаріантМаршруту(i, дані.відрізок, в.км);
+    кнопкиDiv.appendChild(кнопка);
+  });
+
+  const группа = L.featureGroup(усіЛінії);
+  карта.fitBounds(группа.getBounds(), { padding: [20, 20] });
+}
+
+async function обратиВаріантМаршруту(i, відрізок, км) {
+  try {
+    await викликАРІ('зберегтиВибранийВідрізок', { від: відрізок.від, до: відрізок.до, км: км });
+    прибратиКласифікаціюВРядку(i);
+    розрахуватиРядок(i);
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+  }
 }
 
 async function зберегтиКласифікаціюВРядку(i, нові) {
