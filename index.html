@@ -806,6 +806,11 @@ async function розрахуватиРядок(i) {
       кнопка.disabled = false; кнопка.textContent = '🧮';
       return;
     }
+    if (результат.потрібнеВиправленняТочки) {
+      показатиВиправленняТочкиВРядку(i, результат.пункт);
+      кнопка.disabled = false; кнопка.textContent = '🧮';
+      return;
+    }
     await зберегтиРядокПоїздки(i, результат.підсумок);
     кнопка.textContent = '✓';
   } catch (е) {
@@ -919,6 +924,53 @@ async function обратиВаріантМаршруту(i, відрізок, �
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
   }
+}
+
+// ---------- Виправлення точки, коли ORS не може прив'язати її до дороги ----------
+function показатиВиправленняТочкиВРядку(i, пункт) {
+  прибратиКласифікаціюВРядку(i);
+  const рядок = document.createElement('tr');
+  рядок.className = 'classify-row';
+  рядок.id = 'вибір-маршруту-' + i;
+  const td = document.createElement('td');
+  td.colSpan = 15;
+
+  const заголовок = document.createElement('div');
+  заголовок.innerHTML = `<b>Не вдалось прокласти маршрут через "${пункт.назва}"</b> — точка потрапила туди, ` +
+    `де поруч немає дороги. Перетягни мітку на реальну дорогу в цьому населеному пункті:`;
+  td.appendChild(заголовок);
+
+  const картаDiv = document.createElement('div');
+  картаDiv.id = 'мапа-' + i;
+  картаDiv.style.height = '320px';
+  картаDiv.style.margin = '8px 0';
+  картаDiv.style.borderRadius = '6px';
+  td.appendChild(картаDiv);
+
+  const кнопка = document.createElement('button');
+  кнопка.className = 'calc-btn';
+  кнопка.textContent = 'Зберегти нову позицію і порахувати';
+  td.appendChild(кнопка);
+
+  рядок.appendChild(td);
+  document.getElementById('поїздка-рядок-' + i).after(рядок);
+
+  const карта = L.map('мапа-' + i).setView([пункт.lat, пункт.lon], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
+  }).addTo(карта);
+  const мітка = L.marker([пункт.lat, пункт.lon], { draggable: true }).addTo(карта);
+
+  кнопка.onclick = async () => {
+    const позиція = мітка.getLatLng();
+    try {
+      await викликАРІ('оновитиКоординатиПункту', { назва: пункт.назва, lat: позиція.lat, lon: позиція.lng });
+      прибратиКласифікаціюВРядку(i);
+      розрахуватиРядок(i);
+    } catch (е) {
+      повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+    }
+  };
 }
 
 async function зберегтиКласифікаціюВРядку(i, нові) {
