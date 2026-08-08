@@ -512,6 +512,7 @@ function заповнитиШапкуЗДаних(ш) {
   document.getElementById('л-прибуттядата').value = ш.прибуттяДата ? форматДляInput(ш.прибуттяДата) : '';
   document.getElementById('л-прибуттяодометр').value = ш.прибуттяОдометр || '';
 
+  розподілитиДатуВПоля_(ш.дійснийДо, 'л-дійснийдо');
   розподілитиДатуВПоля_(ш.технікДата, 'л-технікдата');
   розподілитиДатуВПоля_(ш.ктпДата, 'л-ктпдата');
 }
@@ -649,6 +650,11 @@ function очиститиФорму() {
 
 // ==================== СТВОРЕННЯ НОВОГО ЛИСТА ====================
 function зібратиДаніШапки() {
+  const дійснийДо = [
+    document.getElementById('л-дійснийдо-д').value,
+    document.getElementById('л-дійснийдо-м').value,
+    document.getElementById('л-дійснийдо-р').value
+  ].join('|');
   const технікДата = [
     document.getElementById('л-технікдата-д').value,
     document.getElementById('л-технікдата-м').value,
@@ -662,8 +668,8 @@ function зібратиДаніШапки() {
 
   return {
     номерДокумента: document.getElementById('л-номер').value,
-    дата: document.getElementById('л-дата').value,
-    дійснийДо: '20' + (document.getElementById('л-дійснийдо-р').value || ''),
+    дата: document.getElementById('л-дата').value || new Date().toISOString().slice(0, 10),
+    дійснийДо: дійснийДо,
     держНомер: document.getElementById('л-машина').value,
     водій: document.getElementById('л-водій').value,
     підстава: document.getElementById('л-підстава').value,
