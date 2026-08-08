@@ -351,19 +351,20 @@ function побудуватиТаблиці() {
     const тр = document.createElement('tr');
     тр.id = 'пмм-рядок-' + i;
     тр.innerHTML = `
-      <td><input id="пмм-${i}-найменування" placeholder="напр. ДП-1-Євро5 BO"></td>
+      <td><input id="пмм-${i}-найменування" placeholder="напр. ДП-1-Євро5 BO">
+        <small id="пмм-${i}-тип-мітка" style="color:#888; display:block; font-size:9px;"></small></td>
       <td><input id="пмм-${i}-код"></td>
       <td><input id="пмм-${i}-наявність" type="number" step="0.1"></td>
       <td><input id="пмм-${i}-отримано" type="number" step="0.1"></td>
       <td id="пмм-${i}-стоянка" class="readonly-cell"></td>
-      <td><input id="пмм-${i}-витрачено" type="number" step="0.1"></td>
+      <td id="пмм-${i}-витрачено" class="readonly-cell"></td>
       <td><input id="пмм-${i}-належить" type="number" step="0.1"></td>
-      <td id="пмм-${i}-економія" class="readonly-cell"></td>
-      <td id="пмм-${i}-перевитрата" class="readonly-cell"></td>
+      <td><input id="пмм-${i}-економія" type="number" step="0.1"></td>
+      <td><input id="пмм-${i}-перевитрата" type="number" step="0.1"></td>
       <td class="del-col" onclick="видалитиРядокПММ(${i})">✕</td>`;
     пммТіло.appendChild(тр);
 
-    // Розрахунок тепер лише через кнопку "Розрахунок ПММ" (не автоматично по blur)
+    document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
   }
 
   const поїздкиТіло = document.getElementById('таблиця-поїздки');
@@ -499,16 +500,18 @@ function заповнитиРядокПоїздкиЗДаних(i, п) {
 
 function заповнитиРядокПММЗДаних(i, з) {
   if (i >= К_ПММ_РЯДКІВ) return;
-  document.getElementById('пмм-рядок-' + i).dataset.id = з.id;
+  const тр = document.getElementById('пмм-рядок-' + i);
+  тр.dataset.id = з.id;
+  if (з.тип) { тр.dataset.тип = з.тип; document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + (ТИПИ_ПММ[з.тип] || з.тип) + ')'; }
   document.getElementById(`пмм-${i}-найменування`).value = з.найменування || '';
   document.getElementById(`пмм-${i}-код`).value = з.код || '';
   document.getElementById(`пмм-${i}-наявність`).value = з.наявністьПеред || '';
   document.getElementById(`пмм-${i}-отримано`).value = з.отримано || '';
-  document.getElementById(`пмм-${i}-витрачено`).value = з.витрачено || '';
+  document.getElementById(`пмм-${i}-стоянка`).textContent = з.стоянка != null && з.стоянка !== '' ? Number(з.стоянка).toFixed(1) : '';
+  document.getElementById(`пмм-${i}-витрачено`).textContent = з.витрачено != null && з.витрачено !== '' ? Number(з.витрачено).toFixed(1) : '';
   document.getElementById(`пмм-${i}-належить`).value = з.належить || '';
-  document.getElementById(`пмм-${i}-стоянка`).textContent = з.стоянка != null ? Number(з.стоянка).toFixed(1) : '';
-  document.getElementById(`пмм-${i}-економія`).textContent = з.економія ? Number(з.економія).toFixed(1) : '';
-  document.getElementById(`пмм-${i}-перевитрата`).textContent = з.перевитрата ? Number(з.перевитрата).toFixed(1) : '';
+  document.getElementById(`пмм-${i}-економія`).value = з.економія || '';
+  document.getElementById(`пмм-${i}-перевитрата`).value = з.перевитрата || '';
 }
 
 function форматДляInput(значення) {
@@ -523,9 +526,12 @@ function форматДляInput(значення) {
 function очиститиФорму() {
   for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
     const тр = document.getElementById('пмм-рядок-' + i);
-    ['найменування','код','наявність','отримано','витрачено','належить'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
-    ['стоянка','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).textContent = '');
+    ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
+    ['стоянка','витрачено'].forEach(п => document.getElementById(`пмм-${i}-${п}`).textContent = '');
+    document.getElementById(`пмм-${i}-тип-мітка`).textContent = '';
+    прибратиПопапТипуПММ(i);
     delete тр.dataset.id;
+    delete тр.dataset.тип;
   }
   for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
     const тр = document.getElementById('поїздка-рядок-' + i);
@@ -579,40 +585,99 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ==================== ПММ: ТИП (паливо / AdBlue / олива) ====================
+const ТИПИ_ПММ = { 'паливо': 'паливо', 'adblue': 'AdBlue', 'олива': 'олива' };
+
+function обробитиНайменуванняПММ(i) {
+  const тр = document.getElementById('пмм-рядок-' + i);
+  const назва = document.getElementById(`пмм-${i}-найменування`).value;
+  if (!назва || тр.dataset.тип) return; // порожньо, або тип уже обрано раніше
+  показатиПопапТипуПММ(i);
+}
+
+function показатиПопапТипуПММ(i) {
+  прибратиПопапТипуПММ(i);
+  const рядок = document.createElement('tr');
+  рядок.className = 'classify-row';
+  рядок.id = 'тип-пмм-' + i;
+  const td = document.createElement('td');
+  td.colSpan = 10;
+  td.innerHTML = '<b>Що це за матеріал?</b> ';
+  Object.keys(ТИПИ_ПММ).forEach(ключ => {
+    const кнопка = document.createElement('button');
+    кнопка.className = 'calc-btn';
+    кнопка.textContent = ТИПИ_ПММ[ключ];
+    кнопка.onclick = () => обратиТипПММ(i, ключ);
+    td.appendChild(кнопка);
+  });
+  рядок.appendChild(td);
+  document.getElementById('пмм-рядок-' + i).after(рядок);
+}
+
+function прибратиПопапТипуПММ(i) {
+  const існуючий = document.getElementById('тип-пмм-' + i);
+  if (існуючий) існуючий.remove();
+}
+
+async function обратиТипПММ(i, тип) {
+  const тр = document.getElementById('пмм-рядок-' + i);
+  тр.dataset.тип = тип;
+  document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + ТИПИ_ПММ[тип] + ')';
+  прибратиПопапТипуПММ(i);
+
+  // Автопідстановка "наявність перед виїздом" з останнього відомого залишку цієї машини й типу
+  if (обраМашина && !document.getElementById(`пмм-${i}-наявність`).value) {
+    try {
+      const результат = await викликАРІ('отриматиОстаннюНаявність', { держНомер: обраМашина.держНомер, тип });
+      if (результат.знайдено) {
+        document.getElementById(`пмм-${i}-наявність`).value = результат.наявність;
+        повідомлення('л-повідомлення', `Підставлено залишок "${ТИПИ_ПММ[тип]}" з попереднього листа цієї машини: ${результат.наявність} л. Перевір і поправ за потреби.`, true);
+      }
+    } catch (е) { /* не критично, якщо не вдалось — просто мовчки пропускаємо */ }
+  }
+}
+
 // ==================== ПММ: РОЗРАХУНОК (кнопка "Розрахунок ПММ") ====================
-// Витрачено і Належить за нормою вводяться вручну водієм. Наявність на стоянці/Економія/Перевитрата рахуються з них.
+// "Витрачено" рахується сервером за кілометражем усіх поїздок листа (з коефіцієнтами ділянок)
+// і нормою машини для типу цього ПММ (паливо/AdBlue/олива — з довідника "Машини").
+// "Наявність на стоянці" = наявність перед + отримано − витрачено. Якщо витрачено виявляється
+// більшим за наявне пальне — сервер відмовляє зберігати (перевитрата) і показує, наскільки саме не вистачає.
 async function розрахунокПММ() {
   if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
 
-  let оброблено = 0;
+  const рядки = [];
+  const індекси = [];
   for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
     const найменування = document.getElementById(`пмм-${i}-найменування`).value;
     if (!найменування) continue;
-
     const тр = document.getElementById('пмм-рядок-' + i);
-    const дані = {
+    рядки.push({
       id: тр.dataset.id || undefined,
-      номерЛиста: поточнийНомерЛиста,
       найменування: найменування,
+      тип: тр.dataset.тип || '',
       код: document.getElementById(`пмм-${i}-код`).value,
-      наявністьПеред: document.getElementById(`пмм-${i}-наявність`).value || 0,
-      отримано: document.getElementById(`пмм-${i}-отримано`).value || 0,
-      витрачено: document.getElementById(`пмм-${i}-витрачено`).value || 0,
-      належить: document.getElementById(`пмм-${i}-належить`).value || 0
-    };
-    try {
-      const результат = await викликАРІ('зберегтиПММЗапис', { дані });
-      тр.dataset.id = результат.id;
-      document.getElementById(`пмм-${i}-стоянка`).textContent = результат.наявністьНаСтоянці.toFixed(1);
-      document.getElementById(`пмм-${i}-економія`).textContent = результат.економія ? результат.економія.toFixed(1) : '';
-      document.getElementById(`пмм-${i}-перевитрата`).textContent = результат.перевитрата ? результат.перевитрата.toFixed(1) : '';
-      оброблено++;
-    } catch (е) {
-      повідомлення('л-повідомлення', `Помилка в рядку ${i + 1}: ` + е.message, false);
-      return;
-    }
+      наявністьПеред: document.getElementById(`пмм-${i}-наявність`).value,
+      отримано: document.getElementById(`пмм-${i}-отримано`).value,
+      належить: document.getElementById(`пмм-${i}-належить`).value
+    });
+    індекси.push(i);
   }
-  повідомлення('л-повідомлення', оброблено ? `Розраховано і збережено рядків ПММ: ${оброблено}.` : 'Немає заповнених рядків ПММ.', true);
+
+  if (!рядки.length) { повідомлення('л-повідомлення', 'Немає заповнених рядків ПММ.', false); return; }
+
+  try {
+    const результат = await викликАРІ('розрахуватиТаЗберегтиПММЛиста', { номерЛиста: поточнийНомерЛиста, рядки });
+    результат.результати.forEach((р, k) => {
+      const i = індекси[k];
+      document.getElementById('пмм-рядок-' + i).dataset.id = р.id;
+      document.getElementById(`пмм-${i}-витрачено`).textContent = р.витрачено.toFixed(1);
+      document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці.toFixed(1);
+    });
+    повідомлення('л-повідомлення',
+      `Розраховано за кілометражем (${результат.кмВсього.toFixed(1)} км): збережено рядків — ${результат.результати.length}.`, true);
+  } catch (е) {
+    повідомлення('л-повідомлення', е.message, false);
+  }
 }
 
 async function видалитиРядокПММ(i) {
@@ -621,9 +686,12 @@ async function видалитиРядокПММ(i) {
   if (id) {
     try { await викликАРІ('видалитиПММЗапис', { id }); } catch (е) { повідомлення('л-повідомлення', е.message, false); return; }
   }
-  ['найменування','код','наявність','отримано','витрачено','належить'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
-  ['стоянка','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).textContent = '');
+  ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
+  ['стоянка','витрачено'].forEach(п => document.getElementById(`пмм-${i}-${п}`).textContent = '');
+  document.getElementById(`пмм-${i}-тип-мітка`).textContent = '';
+  прибратиПопапТипуПММ(i);
   delete тр.dataset.id;
+  delete тр.dataset.тип;
 }
 
 function алертРядок(id, текст) {
@@ -927,10 +995,10 @@ function зібратиДаніПММ() {
       наявність: document.getElementById(`пмм-${i}-наявність`).value,
       отримано: document.getElementById(`пмм-${i}-отримано`).value,
       стоянка: document.getElementById(`пмм-${i}-стоянка`).textContent,
-      витрачено: document.getElementById(`пмм-${i}-витрачено`).value,
+      витрачено: document.getElementById(`пмм-${i}-витрачено`).textContent,
       належить: document.getElementById(`пмм-${i}-належить`).value,
-      економія: document.getElementById(`пмм-${i}-економія`).textContent,
-      перевитрата: document.getElementById(`пмм-${i}-перевитрата`).textContent
+      економія: document.getElementById(`пмм-${i}-економія`).value,
+      перевитрата: document.getElementById(`пмм-${i}-перевитрата`).value
     });
   }
   return список;
