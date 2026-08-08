@@ -76,9 +76,16 @@
   .classify-box select, .classify-box input{ width:auto !important; display:inline-block; }
 
   .add-row-form{ max-width:1500px; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
-  .summary-block{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 14px;
-    font-size:13px; color:var(--dim); }
+  .summary-block{ background:linear-gradient(180deg,#1c1713,#171310); border:1px solid var(--border); border-radius:8px;
+    padding:14px 18px; }
   .summary-block:empty{ display:none; }
+  .summary-caption{ font-family:monospace; font-size:10px; letter-spacing:.1em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; }
+  .summary-period{ font-size:12px; color:var(--dim); margin-bottom:10px; }
+  .summary-stats{ display:flex; gap:28px; flex-wrap:wrap; }
+  .summary-stat{ display:flex; flex-direction:column; min-width:70px; }
+  .summary-stat .value{ font-size:22px; font-weight:bold; color:var(--text); line-height:1.1; }
+  .summary-stat .value.main{ color:var(--accent); }
+  .summary-stat .label{ font-size:10.5px; color:var(--dim); margin-top:2px; }
 
   .app-body{ display:flex; align-items:flex-start; gap:0; }
   .sidebar{ width:220px; flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
@@ -262,7 +269,6 @@
         </tr>
         <tbody id="таблиця-поїздки"></tbody>
       </table>
-      <div id="підсумок-стор2" class="summary-block" style="margin:10px 0 0;"></div>
 
       <table class="no-border" style="margin-top:10px;">
         <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________ <span class="label-sm" style="display:inline;">(військове звання, підпис, прізвище, ініціали)</span></td></tr>
@@ -271,6 +277,7 @@
         <tr class="no-border"><td class="no-border">"____" _________________ 20____ року</td></tr>
       </table>
     </div>
+    <div id="підсумок-стор2" class="summary-block"></div>
   </div>
 
   <!-- ==================== ШАПКА-ДІЇ ==================== -->
@@ -491,6 +498,29 @@ function заповнитиШапкуЗДаних(ш) {
   document.getElementById('л-водій').value = ш.водій || '';
   document.getElementById('л-підстава').value = ш.підстава || '';
   document.getElementById('л-вибуттяодометр').value = ш.одометр || '';
+
+  document.getElementById('л-частина').value = ш.частина || '';
+  document.getElementById('л-старшиймашини').value = ш.старшийМашини || '';
+  document.getElementById('л-начальник').value = ш.начальник || '';
+  document.getElementById('л-технікпіб').value = ш.технікПіб || '';
+  document.getElementById('л-ктппіб').value = ш.ктпПіб || '';
+  document.getElementById('л-причіп').value = ш.причіп || '';
+  document.getElementById('л-причіпномер').value = ш.причіпНомер || '';
+  document.getElementById('л-вантаж').value = ш.вантаж || '';
+  document.getElementById('л-масавантажу').value = ш.масаВантажу || '';
+  document.getElementById('л-вибуттядата').value = ш.вибуттяДата ? форматДляInput(ш.вибуттяДата) : '';
+  document.getElementById('л-прибуттядата').value = ш.прибуттяДата ? форматДляInput(ш.прибуттяДата) : '';
+  document.getElementById('л-прибуттяодометр').value = ш.прибуттяОдометр || '';
+
+  розподілитиДатуВПоля_(ш.технікДата, 'л-технікдата');
+  розподілитиДатуВПоля_(ш.ктпДата, 'л-ктпдата');
+}
+
+function розподілитиДатуВПоля_(текст, префікс) {
+  const частини = (текст || '').split('|');
+  document.getElementById(`${префікс}-д`).value = частини[0] || '';
+  document.getElementById(`${префікс}-м`).value = частини[1] || '';
+  document.getElementById(`${префікс}-р`).value = частини[2] || '';
 }
 
 function заповнитиРядокПоїздкиЗДаних(i, п) {
@@ -544,16 +574,23 @@ function форматДляПоказу(значенняInput) {
 }
 
 // ==================== УЗАГАЛЬНЮЮЧІ БЛОКИ (не друкуються, лише на екрані) ====================
+function побудуватиКарткиКм_(підсумокКм) {
+  return `
+    <div class="summary-stats">
+      <div class="summary-stat"><span class="value main">${підсумокКм.всього.toFixed(1)}</span><span class="label">усього, км</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Траса'].toFixed(1)}</span><span class="label">шосе</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Обласний центр'].toFixed(1)}</span><span class="label">обласний центр</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)}</span><span class="label">з регул. перехрестями</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)}</span><span class="label">без регул. перехресть</span></div>
+    </div>`;
+}
+
 function оновитиПідсумокСторінки1(підсумокКм) {
   const el = document.getElementById('підсумок-стор1');
   if (!підсумокКм || !підсумокКм.всього) { el.innerHTML = ''; return; }
   el.innerHTML =
-    `Витрата палива і мастильних матеріалів порахована за загальним кілометражем ` +
-    `<b>${підсумокКм.всього.toFixed(1)} км</b>, з яких ` +
-    `${підсумокКм['Траса'].toFixed(1)} км шосе, ` +
-    `${підсумокКм['Обласний центр'].toFixed(1)} км обласний центр, ` +
-    `${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)} км н.п. з регульованими перехрестями, ` +
-    `${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)} км н.п. без регульованих перехресть.`;
+    `<div class="summary-caption">Витрата пального і мастильних матеріалів — розрахунок за кілометражем</div>` +
+    побудуватиКарткиКм_(підсумокКм);
 }
 
 async function оновитиПідсумокСторінки2() {
@@ -574,12 +611,9 @@ async function оновитиПідсумокСторінки2() {
     }
 
     el.innerHTML =
-      `За період часу з <b>${форматДляПоказу(мінВибуття)}</b> по <b>${форматДляПоказу(максПрибуття)}</b> пройдено ` +
-      `<b>${підсумокКм.всього.toFixed(1)} км</b>, з них ` +
-      `${підсумокКм['Траса'].toFixed(1)} км шосе, ` +
-      `${підсумокКм['Обласний центр'].toFixed(1)} км обласний центр, ` +
-      `${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)} км н.п. з регульованими перехрестями, ` +
-      `${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)} км н.п. без регульованих перехресть.`;
+      `<div class="summary-caption">Робота машини — за весь дорожній лист</div>` +
+      `<div class="summary-period">Період: ${форматДляПоказу(мінВибуття)} → ${форматДляПоказу(максПрибуття)}</div>` +
+      побудуватиКарткиКм_(підсумокКм);
   } catch (е) {
     // тихо ігноруємо — це лише довідковий блок, не критична дія
   }
@@ -614,6 +648,43 @@ function очиститиФорму() {
 }
 
 // ==================== СТВОРЕННЯ НОВОГО ЛИСТА ====================
+function зібратиДаніШапки() {
+  const технікДата = [
+    document.getElementById('л-технікдата-д').value,
+    document.getElementById('л-технікдата-м').value,
+    document.getElementById('л-технікдата-р').value
+  ].join('|');
+  const ктпДата = [
+    document.getElementById('л-ктпдата-д').value,
+    document.getElementById('л-ктпдата-м').value,
+    document.getElementById('л-ктпдата-р').value
+  ].join('|');
+
+  return {
+    номерДокумента: document.getElementById('л-номер').value,
+    дата: document.getElementById('л-дата').value,
+    дійснийДо: '20' + (document.getElementById('л-дійснийдо-р').value || ''),
+    держНомер: document.getElementById('л-машина').value,
+    водій: document.getElementById('л-водій').value,
+    підстава: document.getElementById('л-підстава').value,
+    одометр: document.getElementById('л-вибуттяодометр').value,
+    частина: document.getElementById('л-частина').value,
+    старшийМашини: document.getElementById('л-старшиймашини').value,
+    начальник: document.getElementById('л-начальник').value,
+    технікПіб: document.getElementById('л-технікпіб').value,
+    технікДата: технікДата,
+    ктпПіб: document.getElementById('л-ктппіб').value,
+    ктпДата: ктпДата,
+    причіп: document.getElementById('л-причіп').value,
+    причіпНомер: document.getElementById('л-причіпномер').value,
+    вантаж: document.getElementById('л-вантаж').value,
+    масаВантажу: document.getElementById('л-масавантажу').value,
+    вибуттяДата: document.getElementById('л-вибуттядата').value,
+    прибуттяДата: document.getElementById('л-прибуттядата').value,
+    прибуттяОдометр: document.getElementById('л-прибуттяодометр').value
+  };
+}
+
 async function створитиНовийЛист() {
   const номер = document.getElementById('л-номер').value;
   const держНомер = document.getElementById('л-машина').value;
@@ -621,23 +692,20 @@ async function створитиНовийЛист() {
   if (!номер) { повідомлення('л-повідомлення', 'Впиши № документа на Сторінці 1, перш ніж створювати лист.', false); return; }
   if (!держНомер || !водій) { повідомлення('л-повідомлення', 'Обери машину і водія на Сторінці 1.', false); return; }
 
-  const дані = {
-    номерДокумента: номер,
-    дата: document.getElementById('л-дата').value,
-    дійснийДо: '20' + (document.getElementById('л-дійснийдо-р').value || ''),
-    держНомер: держНомер,
-    водій: водій,
-    підстава: document.getElementById('л-підстава').value,
-    одометр: document.getElementById('л-вибуттяодометр').value
-  };
+  const цеТойСамийЛист = поточнийНомерЛиста && String(поточнийНомерЛиста) === String(номер);
+  const дані = зібратиДаніШапки();
   try {
     await викликАРІ('створитиДорожнійЛист', { дані });
     поточнийНомерЛиста = номер;
-    очиститиФорму();
-    document.getElementById('л-номер').value = номер;
-    document.getElementById('показ-номер').textContent = номер;
+    if (!цеТойСамийЛист) {
+      // це справді новий лист (інший номер) — очищаємо таблиці під чистий старт
+      очиститиФорму();
+      document.getElementById('л-номер').value = номер;
+      document.getElementById('показ-номер').textContent = номер;
+    }
     await завантажитиСписокЛистів();
-    повідомлення('л-повідомлення', 'Дорожній лист №' + номер + ' створено. Тепер внось поїздки і ПММ.', true);
+    повідомлення('л-повідомлення',
+      цеТойСамийЛист ? 'Дорожній лист №' + номер + ' оновлено.' : 'Дорожній лист №' + номер + ' створено. Тепер внось поїздки і ПММ.', true);
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
   }
@@ -706,6 +774,29 @@ async function обратиТипПММ(i, тип) {
 // "Витрачено" рахується сервером за кілометражем усіх поїздок листа (з коефіцієнтами ділянок)
 // і нормою машини для типу цього ПММ (паливо/AdBlue/олива — з довідника "Машини").
 // "Наявність на стоянці" = наявність перед + отримано − витрачено. Перевитрата блокує збереження.
+// Після розрахунку ПММ бере дату прибуття й показник одометра з ОСТАННЬОЇ (найнижчої заповненої)
+// поїздки на сторінці 2 і підставляє в шапку "Прибуття" (сторінка 1) — це і є фінальні показники
+// після всіх поїздок листа. Тихо зберігає оновлену шапку, щоб це не загубилось.
+async function підставитиКінцевіПоказникиЗПоїздок_() {
+  let останнійІндекс = -1;
+  for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
+    if (document.getElementById('поїздка-рядок-' + i).dataset.id) останнійІндекс = i;
+  }
+  if (останнійІндекс === -1) return; // ще немає жодної збереженої поїздки
+
+  const прибуттяОстанньої = document.getElementById(`поїздка-${останнійІндекс}-прибуття`).value;
+  const одометрОстанньої = document.getElementById(`поїздка-${останнійІндекс}-спідометр`).textContent;
+
+  if (прибуттяОстанньої) document.getElementById('л-прибуттядата').value = прибуттяОстанньої;
+  if (одометрОстанньої) document.getElementById('л-прибуттяодометр').value = одометрОстанньої;
+
+  if (прибуттяОстанньої || одометрОстанньої) {
+    try {
+      await викликАРІ('створитиДорожнійЛист', { дані: зібратиДаніШапки() });
+    } catch (е) { /* не критично — просто зникне при наступному явному збереженні */ }
+  }
+}
+
 async function розрахунокПММ() {
   if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
 
@@ -738,6 +829,7 @@ async function розрахунокПММ() {
       document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці.toFixed(1);
     });
     оновитиПідсумокСторінки1(результат.підсумокКм);
+    await підставитиКінцевіПоказникиЗПоїздок_();
     повідомлення('л-повідомлення',
       `Розраховано за кілометражем (${результат.підсумокКм.всього.toFixed(1)} км): збережено рядків — ${результат.результати.length}.`, true);
   } catch (е) {
