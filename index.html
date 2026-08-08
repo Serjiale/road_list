@@ -76,6 +76,9 @@
   .classify-box select, .classify-box input{ width:auto !important; display:inline-block; }
 
   .add-row-form{ max-width:1500px; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
+  .summary-block{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 14px;
+    font-size:13px; color:var(--dim); }
+  .summary-block:empty{ display:none; }
 
   .app-body{ display:flex; align-items:flex-start; gap:0; }
   .sidebar{ width:220px; flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
@@ -217,6 +220,7 @@
         <tbody id="таблиця-пмм"></tbody>
       </table>
     </div>
+    <div id="підсумок-стор1" class="summary-block"></div>
   </div>
 
   <!-- ==================== СТОРІНКА 2 ==================== -->
@@ -258,6 +262,7 @@
         </tr>
         <tbody id="таблиця-поїздки"></tbody>
       </table>
+      <div id="підсумок-стор2" class="summary-block" style="margin:10px 0 0;"></div>
 
       <table class="no-border" style="margin-top:10px;">
         <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________ <span class="label-sm" style="display:inline;">(військове звання, підпис, прізвище, ініціали)</span></td></tr>
@@ -378,7 +383,7 @@ function побудуватиТаблиці() {
       <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
       <td><input id="поїздка-${i}-звантажем" type="number"></td>
       <td><input id="поїздка-${i}-безвантажу" type="number"></td>
-      <td id="поїздка-${i}-усього" class="readonly-cell"></td>
+      <td><input id="поїздка-${i}-усього" type="number" step="0.1"></td>
       <td><input id="поїздка-${i}-зпричепом" type="number"></td>
       <td><input id="поїздка-${i}-набуксирі" type="number"></td>
       <td><input id="поїздка-${i}-намісці" type="number"></td>
@@ -389,6 +394,7 @@ function побудуватиТаблиці() {
       <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
       <td class="del-col" onclick="видалитиРядокПоїздки(${i})">✕</td>`;
     поїздкиТіло.appendChild(тр);
+    document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => обробитиРучнуЗмінуКм(i));
   }
 }
 
@@ -437,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ==================== СПИСОК ЛИСТІВ (ЛІВА ПАНЕЛЬ) ====================
 let поточнийНомерЛиста = null;
+const підсумкиПоїздок = {}; // i -> {всього, Траса, 'Населений пункт без регульованих перехресть', 'Місто з регульованими перехрестями', 'Обласний центр'}
 
 async function завантажитиСписокЛистів() {
   try {
@@ -464,6 +471,8 @@ async function вибратиЛист(номер) {
     (дані.поїздки || []).forEach((п, i) => заповнитиРядокПоїздкиЗДаних(i, п));
     (дані.пмм || []).forEach((з, i) => заповнитиРядокПММЗДаних(i, з));
     await завантажитиСписокЛистів();
+    await оновитиПідсумокСторінки2();
+    document.getElementById('підсумок-стор1').innerHTML = '';
     повідомлення('л-повідомлення', 'Завантажено дорожній лист №' + номер, true);
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка завантаження листа: ' + е.message, false);
@@ -490,7 +499,13 @@ function заповнитиРядокПоїздкиЗДаних(i, п) {
   document.getElementById(`поїздка-${i}-маршрут`).value = п.маршрутТекст || '';
   if (п.вибуття) document.getElementById(`поїздка-${i}-вибуття`).value = форматДляInput(п.вибуття);
   if (п.прибуття) document.getElementById(`поїздка-${i}-прибуття`).value = форматДляInput(п.прибуття);
-  document.getElementById(`поїздка-${i}-усього`).textContent = п.всього != null ? Number(п.всього).toFixed(1) : '';
+  document.getElementById(`поїздка-${i}-усього`).value = п.всього != null ? Number(п.всього).toFixed(1) : '';
+  підсумкиПоїздок[i] = {
+    всього: Number(п.всього) || 0, 'Траса': Number(п.траса) || 0,
+    'Населений пункт без регульованих перехресть': Number(п.безРегул) || 0,
+    'Місто з регульованими перехрестями': Number(п.зРегул) || 0,
+    'Обласний центр': Number(п.облЦентр) || 0
+  };
   document.getElementById(`поїздка-${i}-мотогодини`).value = п.мотогодини || '';
   document.getElementById(`поїздка-${i}-вантаж`).value = п.вантаж || '';
   document.getElementById(`поїздка-${i}-спідометр`).textContent = п.спідометр || '';
@@ -523,7 +538,56 @@ function форматДляInput(значення) {
   } catch (e) { return ''; }
 }
 
+function форматДляПоказу(значенняInput) {
+  if (!значенняInput) return '—';
+  return значенняInput.replace('T', ' ');
+}
+
+// ==================== УЗАГАЛЬНЮЮЧІ БЛОКИ (не друкуються, лише на екрані) ====================
+function оновитиПідсумокСторінки1(підсумокКм) {
+  const el = document.getElementById('підсумок-стор1');
+  if (!підсумокКм || !підсумокКм.всього) { el.innerHTML = ''; return; }
+  el.innerHTML =
+    `Витрата палива і мастильних матеріалів порахована за загальним кілометражем ` +
+    `<b>${підсумокКм.всього.toFixed(1)} км</b>, з яких ` +
+    `${підсумокКм['Траса'].toFixed(1)} км шосе, ` +
+    `${підсумокКм['Обласний центр'].toFixed(1)} км обласний центр, ` +
+    `${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)} км н.п. з регульованими перехрестями, ` +
+    `${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)} км н.п. без регульованих перехресть.`;
+}
+
+async function оновитиПідсумокСторінки2() {
+  const el = document.getElementById('підсумок-стор2');
+  if (!поточнийНомерЛиста) { el.innerHTML = ''; return; }
+  try {
+    const підсумокКм = await викликАРІ('отриматиПідсумокКмДляЛиста', { номерЛиста: поточнийНомерЛиста });
+    if (!підсумокКм || !підсумокКм.всього) { el.innerHTML = ''; return; }
+
+    let мінВибуття = null, максПрибуття = null;
+    for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
+      const тр = document.getElementById('поїздка-рядок-' + i);
+      if (!тр.dataset.id) continue;
+      const в = document.getElementById(`поїздка-${i}-вибуття`).value;
+      const п = document.getElementById(`поїздка-${i}-прибуття`).value;
+      if (в && (!мінВибуття || в < мінВибуття)) мінВибуття = в;
+      if (п && (!максПрибуття || п > максПрибуття)) максПрибуття = п;
+    }
+
+    el.innerHTML =
+      `За період часу з <b>${форматДляПоказу(мінВибуття)}</b> по <b>${форматДляПоказу(максПрибуття)}</b> пройдено ` +
+      `<b>${підсумокКм.всього.toFixed(1)} км</b>, з них ` +
+      `${підсумокКм['Траса'].toFixed(1)} км шосе, ` +
+      `${підсумокКм['Обласний центр'].toFixed(1)} км обласний центр, ` +
+      `${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)} км н.п. з регульованими перехрестями, ` +
+      `${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)} км н.п. без регульованих перехресть.`;
+  } catch (е) {
+    // тихо ігноруємо — це лише довідковий блок, не критична дія
+  }
+}
+
 function очиститиФорму() {
+  document.getElementById('підсумок-стор1').innerHTML = '';
+  document.getElementById('підсумок-стор2').innerHTML = '';
   for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
     const тр = document.getElementById('пмм-рядок-' + i);
     ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
@@ -539,10 +603,11 @@ function очиститиФорму() {
       const el = document.getElementById(`поїздка-${i}-${п}`);
       if (el) el.value = '';
     });
-    document.getElementById(`поїздка-${i}-усього`).textContent = '';
+    document.getElementById(`поїздка-${i}-усього`).value = '';
     document.getElementById(`поїздка-${i}-спідометр`).textContent = '';
     прибратиКласифікаціюВРядку(i);
     delete тр.dataset.id;
+    delete підсумкиПоїздок[i];
     const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
     if (кнопка) { кнопка.disabled = false; кнопка.textContent = '🧮'; }
   }
@@ -640,8 +705,7 @@ async function обратиТипПММ(i, тип) {
 // ==================== ПММ: РОЗРАХУНОК (кнопка "Розрахунок ПММ") ====================
 // "Витрачено" рахується сервером за кілометражем усіх поїздок листа (з коефіцієнтами ділянок)
 // і нормою машини для типу цього ПММ (паливо/AdBlue/олива — з довідника "Машини").
-// "Наявність на стоянці" = наявність перед + отримано − витрачено. Якщо витрачено виявляється
-// більшим за наявне пальне — сервер відмовляє зберігати (перевитрата) і показує, наскільки саме не вистачає.
+// "Наявність на стоянці" = наявність перед + отримано − витрачено. Перевитрата блокує збереження.
 async function розрахунокПММ() {
   if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
 
@@ -673,8 +737,9 @@ async function розрахунокПММ() {
       document.getElementById(`пмм-${i}-витрачено`).textContent = р.витрачено.toFixed(1);
       document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці.toFixed(1);
     });
+    оновитиПідсумокСторінки1(результат.підсумокКм);
     повідомлення('л-повідомлення',
-      `Розраховано за кілометражем (${результат.кмВсього.toFixed(1)} км): збережено рядків — ${результат.результати.length}.`, true);
+      `Розраховано за кілометражем (${результат.підсумокКм.всього.toFixed(1)} км): збережено рядків — ${результат.результати.length}.`, true);
   } catch (е) {
     повідомлення('л-повідомлення', е.message, false);
   }
@@ -686,6 +751,28 @@ async function видалитиРядокПММ(i) {
   if (id) {
     try { await викликАРІ('видалитиПММЗапис', { id }); } catch (е) { повідомлення('л-повідомлення', е.message, false); return; }
   }
+  for (let k = i; k < К_ПММ_РЯДКІВ - 1; k++) {
+    скопіюватиРядокПММ_(k + 1, k);
+  }
+  очиститиОдинРядокПММ_(К_ПММ_РЯДКІВ - 1);
+}
+
+function скопіюватиРядокПММ_(звідки, куди) {
+  const трЗвідки = document.getElementById('пмм-рядок-' + звідки);
+  const трКуди = document.getElementById('пмм-рядок-' + куди);
+  ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => {
+    document.getElementById(`пмм-${куди}-${п}`).value = document.getElementById(`пмм-${звідки}-${п}`).value;
+  });
+  ['стоянка','витрачено'].forEach(п => {
+    document.getElementById(`пмм-${куди}-${п}`).textContent = document.getElementById(`пмм-${звідки}-${п}`).textContent;
+  });
+  document.getElementById(`пмм-${куди}-тип-мітка`).textContent = document.getElementById(`пмм-${звідки}-тип-мітка`).textContent;
+  if (трЗвідки.dataset.id) трКуди.dataset.id = трЗвідки.dataset.id; else delete трКуди.dataset.id;
+  if (трЗвідки.dataset.тип) трКуди.dataset.тип = трЗвідки.dataset.тип; else delete трКуди.dataset.тип;
+}
+
+function очиститиОдинРядокПММ_(i) {
+  const тр = document.getElementById('пмм-рядок-' + i);
   ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
   ['стоянка','витрачено'].forEach(п => document.getElementById(`пмм-${i}-${п}`).textContent = '');
   document.getElementById(`пмм-${i}-тип-мітка`).textContent = '';
@@ -867,8 +954,9 @@ async function зберегтиРядокПоїздки(i, підсумок) {
   };
   const результат = await викликАРІ('зберегтиПоїздку', { дані });
   document.getElementById('поїздка-рядок-' + i).dataset.id = результат.id;
-  document.getElementById(`поїздка-${i}-усього`).textContent = підсумок.всього.toFixed(1);
+  document.getElementById(`поїздка-${i}-усього`).value = підсумок.всього.toFixed(1);
   document.getElementById(`поїздка-${i}-спідометр`).textContent = одометр;
+  підсумкиПоїздок[i] = Object.assign({}, підсумок);
 
   const загальний = [];
   for (let k = 0; k < К_ПОЇЗДКИ_РЯДКІВ; k++) {
@@ -877,6 +965,7 @@ async function зберегтиРядокПоїздки(i, підсумок) {
     if (тр.dataset.id && текст) загальний.push(текст);
   }
   document.getElementById('л-маршрутзагальний').value = загальний.join('; ');
+  оновитиПідсумокСторінки2();
 }
 
 // Одометр рядка i = одометр попереднього збереженого рядка (або стартовий з шапки, якщо це перший) + км цієї поїздки
@@ -897,10 +986,57 @@ function перерахуватиОдометриПісля(відІндексу
   for (let i = відІндексу; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
     const тр = document.getElementById('поїздка-рядок-' + i);
     if (!тр.dataset.id) continue;
-    const усього = parseFloat(document.getElementById(`поїздка-${i}-усього`).textContent);
+    const усього = parseFloat(document.getElementById(`поїздка-${i}-усього`).value);
     if (isNaN(усього)) continue;
     const одометр = розрахуватиОдометрДляРядка(i, усього);
     document.getElementById(`поїздка-${i}-спідометр`).textContent = одометр;
+  }
+}
+
+// Водій вручну поправив "Усього" (кількість км) в уже розрахованому рядку — пропорційно
+// масштабуємо розбивку по ділянках (щоб фотографічно правильна пропорція траса/місто зберігалась),
+// зсуваємо одометр усіх наступних рядків, і оновлюємо запис на сервері.
+async function обробитиРучнуЗмінуКм(i) {
+  const тр = document.getElementById('поїздка-рядок-' + i);
+  if (!тр.dataset.id) return; // рядок ще не розрахований і не збережений — нема що масштабувати
+  const нове = parseFloat(document.getElementById(`поїздка-${i}-усього`).value);
+  if (isNaN(нове) || нове < 0) return;
+
+  const старий = підсумкиПоїздок[i];
+  let підсумок;
+  if (старий && старий.всього > 0) {
+    const коеф = нове / старий.всього;
+    підсумок = {
+      всього: нове,
+      'Траса': старий['Траса'] * коеф,
+      'Населений пункт без регульованих перехресть': старий['Населений пункт без регульованих перехресть'] * коеф,
+      'Місто з регульованими перехрестями': старий['Місто з регульованими перехрестями'] * коеф,
+      'Обласний центр': старий['Обласний центр'] * коеф
+    };
+  } else {
+    // немає збереженої розбивки (напр. рядок прийшов не з розрахунку) — все як траса
+    підсумок = { всього: нове, 'Траса': нове, 'Населений пункт без регульованих перехресть': 0, 'Місто з регульованими перехрестями': 0, 'Обласний центр': 0 };
+  }
+  підсумкиПоїздок[i] = підсумок;
+
+  const дані = {
+    id: тр.dataset.id,
+    номерЛиста: поточнийНомерЛиста,
+    маршрутТекст: document.getElementById(`поїздка-${i}-маршрут`).value,
+    вибуття: document.getElementById(`поїздка-${i}-вибуття`).value,
+    прибуття: document.getElementById(`поїздка-${i}-прибуття`).value,
+    мотогодини: document.getElementById(`поїздка-${i}-мотогодини`).value,
+    вантаж: document.getElementById(`поїздка-${i}-вантаж`).value,
+    спідометр: розрахуватиОдометрДляРядка(i, нове),
+    підсумок
+  };
+  try {
+    await викликАРІ('зберегтиПоїздку', { дані });
+    перерахуватиОдометриПісля(i);
+    оновитиПідсумокСторінки2();
+    повідомлення('л-повідомлення', `Км уточнено. Показники одометра з рядка ${i + 1} і нижче перераховано.`, true);
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
   }
 }
 
@@ -910,17 +1046,41 @@ async function видалитиРядокПоїздки(i) {
   if (id) {
     try { await викликАРІ('видалитиПоїздку', { id }); } catch (е) { повідомлення('л-повідомлення', е.message, false); return; }
   }
-  ['маршрут','вибуття','прибуття','звантажем','безвантажу','зпричепом','набуксирі','намісці','підчасруху','мотогодини','вантаж','кількість'].forEach(п => {
+  for (let k = i; k < К_ПОЇЗДКИ_РЯДКІВ - 1; k++) {
+    скопіюватиРядокПоїздки_(k + 1, k);
+  }
+  очиститиОдинРядокПоїздки_(К_ПОЇЗДКИ_РЯДКІВ - 1);
+  перерахуватиОдометриПісля(0);
+  оновитиПідсумокСторінки2();
+}
+
+function скопіюватиРядокПоїздки_(звідки, куди) {
+  const трЗвідки = document.getElementById('поїздка-рядок-' + звідки);
+  const трКуди = document.getElementById('поїздка-рядок-' + куди);
+  ['маршрут','вибуття','прибуття','звантажем','безвантажу','зпричепом','набуксирі','намісці','підчасруху','мотогодини','вантаж','кількість','усього'].forEach(п => {
+    document.getElementById(`поїздка-${куди}-${п}`).value = document.getElementById(`поїздка-${звідки}-${п}`).value;
+  });
+  document.getElementById(`поїздка-${куди}-спідометр`).textContent = document.getElementById(`поїздка-${звідки}-спідометр`).textContent;
+  if (трЗвідки.dataset.id) трКуди.dataset.id = трЗвідки.dataset.id; else delete трКуди.dataset.id;
+  підсумкиПоїздок[куди] = підсумкиПоїздок[звідки];
+  delete підсумкиПоїздок[звідки];
+  const кнопкаЗвідки = трЗвідки.querySelector('.calc-btn');
+  const кнопкаКуди = трКуди.querySelector('.calc-btn');
+  if (кнопкаЗвідки && кнопкаКуди) { кнопкаКуди.disabled = кнопкаЗвідки.disabled; кнопкаКуди.textContent = кнопкаЗвідки.textContent; }
+}
+
+function очиститиОдинРядокПоїздки_(i) {
+  const тр = document.getElementById('поїздка-рядок-' + i);
+  ['маршрут','вибуття','прибуття','звантажем','безвантажу','зпричепом','набуксирі','намісці','підчасруху','мотогодини','вантаж','кількість','усього'].forEach(п => {
     const el = document.getElementById(`поїздка-${i}-${п}`);
     if (el) el.value = '';
   });
-  document.getElementById(`поїздка-${i}-усього`).textContent = '';
   document.getElementById(`поїздка-${i}-спідометр`).textContent = '';
   прибратиКласифікаціюВРядку(i);
   delete тр.dataset.id;
-  перерахуватиОдометриПісля(i + 1);
-  const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
-  кнопка.disabled = false; кнопка.textContent = '🧮';
+  delete підсумкиПоїздок[i];
+  const кнопка = тр.querySelector('.calc-btn');
+  if (кнопка) { кнопка.disabled = false; кнопка.textContent = '🧮'; }
 }
 
 // ==================== ГЕНЕРАЦІЯ WORD (.docx) — ЗАПОВНЕННЯ ТОЧНОГО ШАБЛОНУ ====================
@@ -1014,7 +1174,7 @@ function зібратиДаніПоїздок() {
       прибуття: document.getElementById(`поїздка-${i}-прибуття`).value,
       звантажем: document.getElementById(`поїздка-${i}-звантажем`).value,
       безвантажу: document.getElementById(`поїздка-${i}-безвантажу`).value,
-      усього: document.getElementById(`поїздка-${i}-усього`).textContent,
+      усього: document.getElementById(`поїздка-${i}-усього`).value,
       зпричепом: document.getElementById(`поїздка-${i}-зпричепом`).value,
       набуксирі: document.getElementById(`поїздка-${i}-набуксирі`).value,
       намісці: document.getElementById(`поїздка-${i}-намісці`).value,
