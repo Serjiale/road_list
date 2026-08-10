@@ -37,28 +37,28 @@
   .paper{
     background:#f7f4ee; color:#111; border-radius:2px; padding:18px 22px;
     max-width:1500px; width:100%; margin:0 auto 20px; box-shadow:0 8px 30px rgba(0,0,0,.4);
-    font-size:11px; aspect-ratio:297/210; overflow-y:auto;
+    font-size:14px; aspect-ratio:297/210; overflow-y:auto;
   }
   .paper table{ border-collapse:collapse; width:100%; table-layout:fixed; }
-  .paper td, .paper th{ border:1px solid #333; padding:2px 3px; vertical-align:middle; font-size:10px; overflow:hidden; }
+  .paper td, .paper th{ border:1px solid #333; padding:3px 4px; vertical-align:middle; font-size:13px; overflow:hidden; }
   .paper th{ font-weight:normal; text-align:center; background:#eae5d8; }
   .paper input, .paper select{
-    width:100%; border:none; background:transparent; font-family:inherit; font-size:10px;
-    padding:1px; color:#111;
+    width:100%; border:none; background:transparent; font-family:inherit; font-size:13px;
+    padding:2px; color:#111;
   }
   .paper input:focus, .paper select:focus{ outline:1px solid var(--accent); background:#fff8ea; }
-  .label-sm{ font-size:8px; color:#555; display:block; }
+  .label-sm{ font-size:10.5px; color:#555; display:block; }
   .center{ text-align:center; } .bold{ font-weight:bold; }
   .no-border{ border:none !important; }
   .readonly-cell{ background:#f0ede4; text-align:center; }
 
   .del-col{ border:none !important; width:16px; padding:0 !important; text-align:center; cursor:pointer;
-    color:transparent; font-weight:bold; font-size:12px; user-select:none; }
+    color:transparent; font-weight:bold; font-size:14px; user-select:none; }
   tr:hover .del-col{ color:#ccc; }
   .del-col:hover{ color:var(--danger) !important; }
 
-  .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:1px 4px;
-    font-size:9px; cursor:pointer; white-space:nowrap; margin-left:1px; }
+  .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:3px 6px;
+    font-size:11px; cursor:pointer; white-space:nowrap; margin-left:1px; }
   .calc-btn:disabled{ background:#ccc; cursor:default; }
   .route-cell{ display:flex; gap:1px; align-items:center; }
   .route-cell input{ flex:1; min-width:0; }
@@ -91,7 +91,7 @@
   .sidebar{ width:220px; flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
   .sidebar button{ width:100%; margin-bottom:12px; }
   .list-item{ padding:8px 10px; border:1px solid var(--border); border-radius:6px; margin-bottom:6px;
-    cursor:pointer; font-size:12px; background:var(--panel); }
+    cursor:pointer; font-size:13.5px; background:var(--panel); }
   .list-item:hover{ border-color:var(--accent); }
   .list-item.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); }
   .list-item small{ opacity:0.8; }
@@ -282,6 +282,7 @@
 
   <!-- ==================== ШАПКА-ДІЇ ==================== -->
   <div class="toolbar">
+    <button onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
     <button onclick="розрахунокПММ()">Розрахунок ПММ</button>
   </div>
   <div id="л-повідомлення"></div>
@@ -384,7 +385,9 @@ function побудуватиТаблиці() {
     const тр = document.createElement('tr');
     тр.id = 'поїздка-рядок-' + i;
     тр.innerHTML = `
-      <td><div class="route-cell"><input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
+      <td><div class="route-cell">
+        <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
+        <input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
         <button class="calc-btn" onclick="розрахуватиРядок(${i})">🧮</button></div></td>
       <td><input id="поїздка-${i}-вибуття" type="datetime-local"></td>
       <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
@@ -803,6 +806,69 @@ async function підставитиКінцевіПоказникиЗПоїзд�
   }
 }
 
+// Зберігає геть усе, що зараз є в формі: шапку, всі вже прораховані поїздки (з поточними
+// значеннями полів мотогодини/вантаж/маршрут), і всі заповнені рядки ПММ — одним натисканням,
+// з чітким підтвердженням, скільки саме чого збережено.
+async function зберегтиВсіДані() {
+  const номер = document.getElementById('л-номер').value;
+  if (!номер) { повідомлення('л-повідомлення', 'Впиши № документа, перш ніж зберігати.', false); return; }
+
+  try {
+    await викликАРІ('створитиДорожнійЛист', { дані: зібратиДаніШапки() });
+    поточнийНомерЛиста = номер;
+
+    let поїздокЗбережено = 0;
+    for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
+      const тр = document.getElementById('поїздка-рядок-' + i);
+      if (!тр.dataset.id || !підсумкиПоїздок[i]) continue; // ще не прораховано 🧮 — нема що зберігати
+      const дані = {
+        id: тр.dataset.id,
+        номерЛиста: номер,
+        маршрутТекст: document.getElementById(`поїздка-${i}-маршрут`).value,
+        вибуття: document.getElementById(`поїздка-${i}-вибуття`).value,
+        прибуття: document.getElementById(`поїздка-${i}-прибуття`).value,
+        мотогодини: document.getElementById(`поїздка-${i}-мотогодини`).value,
+        вантаж: document.getElementById(`поїздка-${i}-вантаж`).value,
+        спідометр: document.getElementById(`поїздка-${i}-спідометр`).textContent,
+        підсумок: підсумкиПоїздок[i]
+      };
+      await викликАРІ('зберегтиПоїздку', { дані });
+      поїздокЗбережено++;
+    }
+
+    let пммЗбережено = 0;
+    for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
+      const найменування = document.getElementById(`пмм-${i}-найменування`).value;
+      if (!найменування) continue;
+      const тр = document.getElementById('пмм-рядок-' + i);
+      const дані = {
+        id: тр.dataset.id || undefined,
+        номерЛиста: номер,
+        найменування: найменування,
+        тип: тр.dataset.тип || '',
+        код: document.getElementById(`пмм-${i}-код`).value,
+        наявністьПеред: document.getElementById(`пмм-${i}-наявність`).value,
+        отримано: document.getElementById(`пмм-${i}-отримано`).value,
+        стоянка: document.getElementById(`пмм-${i}-стоянка`).textContent,
+        витрачено: document.getElementById(`пмм-${i}-витрачено`).textContent,
+        належить: document.getElementById(`пмм-${i}-належить`).value,
+        економія: document.getElementById(`пмм-${i}-економія`).value,
+        перевитрата: document.getElementById(`пмм-${i}-перевитрата`).value
+      };
+      const результат = await викликАРІ('зберегтиПММЗапис', { дані });
+      тр.dataset.id = результат.id;
+      пммЗбережено++;
+    }
+
+    await завантажитиСписокЛистів();
+    await оновитиПідсумокСторінки2();
+    повідомлення('л-повідомлення',
+      `✓ Збережено: шапка листа, поїздок — ${поїздокЗбережено}, записів ПММ — ${пммЗбережено}.`, true);
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка збереження: ' + е.message, false);
+  }
+}
+
 async function розрахунокПММ() {
   if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
 
@@ -924,28 +990,47 @@ function показатиКласифікаціюВРядку(i, нові) {
   рядокКласифікації.id = 'класифікація-' + i;
   const td = document.createElement('td');
   td.colSpan = 15;
-  td.innerHTML = '<b>Нові населені пункти:</b> ';
+  td.innerHTML = '<b>Нові населені пункти — перевір/уточни точку на карті і категорію:</b>';
+
+  const мітки = {}; // j -> Leaflet marker, щоб прочитати фінальну позицію при збереженні
+
   нові.forEach((п, j) => {
     const авто = п.довжинаАвто;
-    const box = document.createElement('span');
-    box.className = 'classify-box';
-    box.innerHTML = `
-      ${п.назва}:
-      <select id="кл-${i}-${j}-категорія">
+    const блок = document.createElement('div');
+    блок.className = 'classify-box';
+    блок.style.display = 'block';
+    блок.style.marginTop = '8px';
+    блок.innerHTML = `
+      <b>${п.назва}</b>
+      <select id="кл-${i}-${j}-категорія" style="width:auto; display:inline-block; margin-left:8px;">
         <option value="Населений пункт без регульованих перехресть">Без регул.</option>
         <option value="Місто з регульованими перехрестями">З регул.</option>
         <option value="Обласний центр">Обл. центр</option>
       </select>
-      <input id="кл-${i}-${j}-довжина" type="number" step="0.1" style="width:60px;" value="${авто != null ? авто : ''}" placeholder="км">`;
-    td.appendChild(box);
+      Довжина проїзду:
+      <input id="кл-${i}-${j}-довжина" type="number" step="0.1" style="width:60px; display:inline-block;" value="${авто != null ? авто : ''}" placeholder="км">
+      <div id="кл-мапа-${i}-${j}" style="height:220px; margin-top:6px; border-radius:6px;"></div>
+      <small style="color:#666;">Мітка стоїть там, де карта визначила пункт автоматично — перетягни, якщо стартова точка має бути в іншому місці.</small>`;
+    td.appendChild(блок);
   });
+
   const кнопкаОК = document.createElement('button');
   кнопкаОК.className = 'calc-btn';
+  кнопкаОК.style.marginTop = '10px';
   кнопкаОК.textContent = 'Зберегти пункти й порахувати';
-  кнопкаОК.onclick = () => зберегтиКласифікаціюВРядку(i, нові);
+  кнопкаОК.onclick = () => зберегтиКласифікаціюВРядку(i, нові, мітки);
   td.appendChild(кнопкаОК);
   рядокКласифікації.appendChild(td);
   document.getElementById('поїздка-рядок-' + i).after(рядокКласифікації);
+
+  // Карти ініціалізуємо ПІСЛЯ вставки в DOM (Leaflet потребує реального контейнера з розмірами)
+  нові.forEach((п, j) => {
+    const карта = L.map(`кл-мапа-${i}-${j}`).setView([п.lat, п.lon], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap', maxZoom: 19
+    }).addTo(карта);
+    мітки[j] = L.marker([п.lat, п.lon], { draggable: true }).addTo(карта);
+  });
 }
 
 function прибратиКласифікаціюВРядку(i) {
@@ -1025,6 +1110,76 @@ async function обратиВаріантМаршруту(i, відрізок, �
 }
 
 // ---------- Виправлення точки, коли ORS не може прив'язати її до дороги ----------
+// ---------- Покрокове редагування точок уже введеного маршруту ----------
+async function змінитиТочкиМаршруту(i) {
+  const текст = document.getElementById(`поїздка-${i}-маршрут`).value;
+  const унікальні = [...new Set(текст.split('/').map(п => п.trim()).filter(Boolean))];
+  if (!унікальні.length) { повідомлення('л-повідомлення', 'Спочатку впиши маршрут у це поле.', false); return; }
+  показатиРедагуванняТочкиПоЧерзі_(i, унікальні, 0);
+}
+
+async function показатиРедагуванняТочкиПоЧерзі_(i, точки, індекс) {
+  прибратиКласифікаціюВРядку(i);
+
+  if (індекс >= точки.length) {
+    повідомлення('л-повідомлення', 'Координати всіх точок маршруту оновлено. Перераховую…', true);
+    розрахуватиРядок(i);
+    return;
+  }
+
+  const назва = точки[індекс];
+  let інфо;
+  try {
+    інфо = await викликАРІ('отриматиНаселенийПункт', { назва });
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+    return;
+  }
+  if (!інфо.знайдено) {
+    // цього пункту ще нема в довіднику — його класифікують звичайним шляхом при розрахунку маршруту
+    показатиРедагуванняТочкиПоЧерзі_(i, точки, індекс + 1);
+    return;
+  }
+
+  const рядок = document.createElement('tr');
+  рядок.className = 'classify-row';
+  рядок.id = 'вибір-маршруту-' + i;
+  const td = document.createElement('td');
+  td.colSpan = 15;
+  td.innerHTML = `<b>Точка ${індекс + 1} з ${точки.length}: ${назва}</b> — перетягни мітку на потрібне місце в населеному пункті:`;
+
+  const картаDiv = document.createElement('div');
+  картаDiv.id = 'мапа-' + i;
+  картаDiv.style.height = '320px';
+  картаDiv.style.margin = '8px 0';
+  картаDiv.style.borderRadius = '6px';
+  td.appendChild(картаDiv);
+
+  const кнопка = document.createElement('button');
+  кнопка.style.marginTop = '10px';
+  кнопка.textContent = точки.length - індекс > 1 ? `Зберегти й перейти до наступної точки (${точки.length - індекс - 1} лишилось)` : 'Зберегти';
+  td.appendChild(кнопка);
+
+  рядок.appendChild(td);
+  document.getElementById('поїздка-рядок-' + i).after(рядок);
+
+  const карта = L.map('мапа-' + i).setView([інфо.lat, інфо.lon], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
+  }).addTo(карта);
+  const мітка = L.marker([інфо.lat, інфо.lon], { draggable: true }).addTo(карта);
+
+  кнопка.onclick = async () => {
+    const позиція = мітка.getLatLng();
+    try {
+      await викликАРІ('оновитиКоординатиПункту', { назва, lat: позиція.lat, lon: позиція.lng });
+      показатиРедагуванняТочкиПоЧерзі_(i, точки, індекс + 1);
+    } catch (е) {
+      повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+    }
+  };
+}
+
 function показатиВиправленняТочкиВРядку(i, пункт) {
   прибратиКласифікаціюВРядку(i);
   const рядок = document.createElement('tr');
@@ -1046,7 +1201,7 @@ function показатиВиправленняТочкиВРядку(i, пун�
   td.appendChild(картаDiv);
 
   const кнопка = document.createElement('button');
-  кнопка.className = 'calc-btn';
+  кнопка.style.marginTop = '10px';
   кнопка.textContent = 'Зберегти нову позицію і порахувати';
   td.appendChild(кнопка);
 
@@ -1071,13 +1226,14 @@ function показатиВиправленняТочкиВРядку(i, пун�
   };
 }
 
-async function зберегтиКласифікаціюВРядку(i, нові) {
+async function зберегтиКласифікаціюВРядку(i, нові, мітки) {
   try {
     for (let j = 0; j < нові.length; j++) {
       const п = нові[j];
       const категорія = document.getElementById(`кл-${i}-${j}-категорія`).value;
       const довжина = document.getElementById(`кл-${i}-${j}-довжина`).value || 0;
-      await викликАРІ('додатиНаселенийПункт', { назва: п.назва, категорія, довжинаПроїзду: довжина, lat: п.lat, lon: п.lon });
+      const позиція = мітки && мітки[j] ? мітки[j].getLatLng() : { lat: п.lat, lng: п.lon };
+      await викликАРІ('додатиНаселенийПункт', { назва: п.назва, категорія, довжинаПроїзду: довжина, lat: позиція.lat, lon: позиція.lng });
     }
     прибратиКласифікаціюВРядку(i);
     розрахуватиРядок(i);
