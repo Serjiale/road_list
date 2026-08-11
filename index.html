@@ -429,7 +429,7 @@ function створитиРядокПоїздки_(i) {
     <td><div class="route-cell">
       <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
       <input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
-      <button class="calc-btn" onclick="розрахуватиРядок(${i})" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
+      <button id="поїздка-${i}-кнопка-розрахувати" class="calc-btn" onclick="розрахуватиРядок(${i})" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
       <button class="calc-btn" onclick="показатиМаршрутНаКарті(${i})" title="Показати маршрут на карті для перевірки">🗺️</button>
       <button class="calc-btn" onclick="показатиКоригуванняМаршруту(${i})" title="Скоригувати маршрут вручну (додати проміжну точку)">🛠️</button></div>
       <label style="font-size:9px; color:#666; display:block; margin-top:2px; font-weight:normal;">
@@ -607,7 +607,7 @@ function заповнитиРядокПоїздкиЗДаних(i, п) {
   document.getElementById(`поїздка-${i}-мотогодини`).value = п.мотогодини || '';
   document.getElementById(`поїздка-${i}-вантаж`).value = п.вантаж || '';
   document.getElementById(`поїздка-${i}-спідометр`).textContent = п.спідометр || '';
-  const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
+  const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
   if (кнопка) кнопка.textContent = '✓';
 }
 
@@ -713,7 +713,7 @@ function очиститиФорму() {
     прибратиКласифікаціюВРядку(i);
     delete тр.dataset.id;
     delete підсумкиПоїздок[i];
-    const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
+    const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
     if (кнопка) { кнопка.disabled = false; кнопка.textContent = '🧮'; }
   }
 }
@@ -1039,7 +1039,7 @@ async function розрахуватиРядок(i) {
   const пункти = текст.split('/').map(п => п.trim()).filter(Boolean);
   if (пункти.length < 2) { повідомлення('л-повідомлення', 'Вкажи щонайменше два пункти в маршруті рядка ' + (i+1), false); return; }
 
-  const кнопка = document.querySelector(`#поїздка-рядок-${i} .calc-btn`);
+  const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
   кнопка.disabled = true; кнопка.textContent = '…';
   try {
     const результат = await викликАРІ('розрахуватиМаршрут', { пункти });
@@ -1726,8 +1726,8 @@ function скопіюватиРядокПоїздки_(звідки, куди) {
   if (трЗвідки.dataset.id) трКуди.dataset.id = трЗвідки.dataset.id; else delete трКуди.dataset.id;
   підсумкиПоїздок[куди] = підсумкиПоїздок[звідки];
   delete підсумкиПоїздок[звідки];
-  const кнопкаЗвідки = трЗвідки.querySelector('.calc-btn');
-  const кнопкаКуди = трКуди.querySelector('.calc-btn');
+  const кнопкаЗвідки = document.getElementById(`поїздка-${звідки}-кнопка-розрахувати`);
+  const кнопкаКуди = document.getElementById(`поїздка-${куди}-кнопка-розрахувати`);
   if (кнопкаЗвідки && кнопкаКуди) { кнопкаКуди.disabled = кнопкаЗвідки.disabled; кнопкаКуди.textContent = кнопкаЗвідки.textContent; }
 }
 
@@ -1741,7 +1741,7 @@ function очиститиОдинРядокПоїздки_(i) {
   прибратиКласифікаціюВРядку(i);
   delete тр.dataset.id;
   delete підсумкиПоїздок[i];
-  const кнопка = тр.querySelector('.calc-btn');
+  const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
   if (кнопка) { кнопка.disabled = false; кнопка.textContent = '🧮'; }
 }
 
