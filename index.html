@@ -58,14 +58,19 @@
   .del-col:hover{ color:var(--danger) !important; }
 
   .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:3px 6px;
-    font-size:11px; cursor:pointer; white-space:nowrap; margin-left:1px; }
+    font-size:11px; cursor:pointer; white-space:nowrap; margin-left:1px; transition:background-color .12s; }
+  .calc-btn:hover{ background:var(--accent2); }
   .calc-btn:disabled{ background:#ccc; cursor:default; }
   .route-cell{ display:flex; gap:1px; align-items:center; }
   .route-cell input{ flex:1; min-width:0; }
 
   .toolbar{ max-width:1500px; margin:0 auto 14px; display:flex; gap:10px; flex-wrap:wrap; }
-  button{ padding:9px 16px; background:var(--accent); color:#1a1310; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; }
+  button{ padding:9px 16px; background:var(--accent); color:#1a1310; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; transition:background-color .12s, filter .12s; }
+  button:hover{ background:var(--accent2); }
   button.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--border); }
+  button.secondary:hover{ background:#2c261f; border-color:var(--accent); }
+  button:disabled{ filter:grayscale(60%); cursor:default; }
+  button:disabled:hover{ background:var(--accent); }
 
   .msg{ max-width:1500px; margin:0 auto 14px; padding:10px 14px; border-radius:6px; font-size:13px; }
   .msg.ok{ background:#1f3a1f; color:#a8e6a8; border:1px solid #2f5a2f; }
@@ -126,6 +131,13 @@
     <div class="tab active" data-tab="стор1">Сторінка 1</div>
     <div class="tab" data-tab="стор2">Сторінка 2</div>
     <div class="tab" data-tab="excel">Excel</div>
+  </div>
+
+  <div id="панель-стор1-топ">
+    <div id="підсумок-стор1" class="summary-block" style="max-width:1500px; margin:0 auto 16px;"></div>
+  </div>
+  <div id="панель-стор2-топ" style="display:none;">
+    <div id="підсумок-стор2" class="summary-block" style="max-width:1500px; margin:0 auto 16px;"></div>
   </div>
 
   <!-- ==================== СТОРІНКА 1 ==================== -->
@@ -226,8 +238,11 @@
         </tr>
         <tbody id="таблиця-пмм"></tbody>
       </table>
+      <div style="margin-top:10px;">
+        <button class="secondary" onclick="додатиРядокПММ()">+ Додати рядок</button>
+        <button class="secondary" onclick="очиститиРозрахункиПММ()">Очистити дані розрахунків</button>
+      </div>
     </div>
-    <div id="підсумок-стор1" class="summary-block"></div>
   </div>
 
   <!-- ==================== СТОРІНКА 2 ==================== -->
@@ -269,6 +284,9 @@
         </tr>
         <tbody id="таблиця-поїздки"></tbody>
       </table>
+      <div style="margin:10px 0;">
+        <button class="secondary" onclick="додатиРядокПоїздки()">+ Додати рядок</button>
+      </div>
 
       <table class="no-border" style="margin-top:10px;">
         <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________ <span class="label-sm" style="display:inline;">(військове звання, підпис, прізвище, ініціали)</span></td></tr>
@@ -277,7 +295,6 @@
         <tr class="no-border"><td class="no-border">"____" _________________ 20____ року</td></tr>
       </table>
     </div>
-    <div id="підсумок-стор2" class="summary-block"></div>
   </div>
 
   <!-- ==================== ШАПКА-ДІЇ ==================== -->
@@ -310,8 +327,8 @@ const CONFIG = {
 };
 
 // Точна кількість рядків згідно з реальним бланком (Додаток 80)
-const К_ПММ_РЯДКІВ = 7;
-const К_ПОЇЗДКИ_РЯДКІВ = 17;
+let К_ПММ_РЯДКІВ = 7;
+let К_ПОЇЗДКИ_РЯДКІВ = 17;
 
 let googleToken = null;
 let обраМашина = null;
@@ -338,6 +355,8 @@ document.querySelectorAll('.tab').forEach(t => {
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('панель-' + t.dataset.tab).classList.add('active');
+    document.getElementById('панель-стор1-топ').style.display = t.dataset.tab === 'стор1' ? 'block' : 'none';
+    document.getElementById('панель-стор2-топ').style.display = t.dataset.tab === 'стор2' ? 'block' : 'none';
   });
 });
 
@@ -359,53 +378,66 @@ function повідомлення(id, текст, ок) {
 
 // ==================== ПОБУДОВА ПОРОЖНІХ РЯДКІВ ====================
 function побудуватиТаблиці() {
+  for (let i = 0; i < К_ПММ_РЯДКІВ; i++) створитиРядокПММ_(i);
+  for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) створитиРядокПоїздки_(i);
+}
+
+function створитиРядокПММ_(i) {
   const пммТіло = document.getElementById('таблиця-пмм');
-  for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
-    const тр = document.createElement('tr');
-    тр.id = 'пмм-рядок-' + i;
-    тр.innerHTML = `
-      <td><input id="пмм-${i}-найменування" placeholder="напр. ДП-1-Євро5 BO">
-        <small id="пмм-${i}-тип-мітка" style="color:#888; display:block; font-size:9px;"></small></td>
-      <td><input id="пмм-${i}-код"></td>
-      <td><input id="пмм-${i}-наявність" type="number" step="0.1"></td>
-      <td><input id="пмм-${i}-отримано" type="number" step="0.1"></td>
-      <td id="пмм-${i}-стоянка" class="readonly-cell"></td>
-      <td id="пмм-${i}-витрачено" class="readonly-cell"></td>
-      <td><input id="пмм-${i}-належить" type="number" step="0.1"></td>
-      <td><input id="пмм-${i}-економія" type="number" step="0.1"></td>
-      <td><input id="пмм-${i}-перевитрата" type="number" step="0.1"></td>
-      <td class="del-col" onclick="видалитиРядокПММ(${i})">✕</td>`;
-    пммТіло.appendChild(тр);
+  const тр = document.createElement('tr');
+  тр.id = 'пмм-рядок-' + i;
+  тр.innerHTML = `
+    <td><input id="пмм-${i}-найменування" placeholder="напр. ДП-1-Євро5 BO">
+      <small id="пмм-${i}-тип-мітка" style="color:#888; display:block; font-size:9px;"></small></td>
+    <td><input id="пмм-${i}-код"></td>
+    <td><input id="пмм-${i}-наявність" type="number" step="0.1"></td>
+    <td><input id="пмм-${i}-отримано" type="number" step="0.1"></td>
+    <td id="пмм-${i}-стоянка" class="readonly-cell"></td>
+    <td id="пмм-${i}-витрачено" class="readonly-cell"></td>
+    <td><input id="пмм-${i}-належить" type="number" step="0.1"></td>
+    <td><input id="пмм-${i}-економія" type="number" step="0.1"></td>
+    <td><input id="пмм-${i}-перевитрата" type="number" step="0.1"></td>
+    <td class="del-col" onclick="видалитиРядокПММ(${i})">✕</td>`;
+  пммТіло.appendChild(тр);
+  document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
+}
 
-    document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
-  }
-
+function створитиРядокПоїздки_(i) {
   const поїздкиТіло = document.getElementById('таблиця-поїздки');
-  for (let i = 0; i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
-    const тр = document.createElement('tr');
-    тр.id = 'поїздка-рядок-' + i;
-    тр.innerHTML = `
-      <td><div class="route-cell">
-        <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
-        <input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
-        <button class="calc-btn" onclick="розрахуватиРядок(${i})">🧮</button></div></td>
-      <td><input id="поїздка-${i}-вибуття" type="datetime-local"></td>
-      <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
-      <td><input id="поїздка-${i}-звантажем" type="number"></td>
-      <td><input id="поїздка-${i}-безвантажу" type="number"></td>
-      <td><input id="поїздка-${i}-усього" type="number" step="0.1"></td>
-      <td><input id="поїздка-${i}-зпричепом" type="number"></td>
-      <td><input id="поїздка-${i}-набуксирі" type="number"></td>
-      <td><input id="поїздка-${i}-намісці" type="number"></td>
-      <td><input id="поїздка-${i}-підчасруху" type="number"></td>
-      <td><input id="поїздка-${i}-мотогодини" type="number"></td>
-      <td><input id="поїздка-${i}-вантаж"></td>
-      <td><input id="поїздка-${i}-кількість" type="number" step="0.1"></td>
-      <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
-      <td class="del-col" onclick="видалитиРядокПоїздки(${i})">✕</td>`;
-    поїздкиТіло.appendChild(тр);
-    document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => обробитиРучнуЗмінуКм(i));
-  }
+  const тр = document.createElement('tr');
+  тр.id = 'поїздка-рядок-' + i;
+  тр.innerHTML = `
+    <td><div class="route-cell">
+      <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
+      <input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
+      <button class="calc-btn" onclick="розрахуватиРядок(${i})" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
+      <button class="calc-btn" onclick="показатиМаршрутНаКарті(${i})" title="Показати маршрут на карті для перевірки">🗺️</button></div></td>
+    <td><input id="поїздка-${i}-вибуття" type="datetime-local"></td>
+    <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
+    <td><input id="поїздка-${i}-звантажем" type="number"></td>
+    <td><input id="поїздка-${i}-безвантажу" type="number"></td>
+    <td><input id="поїздка-${i}-усього" type="number" step="0.1"></td>
+    <td><input id="поїздка-${i}-зпричепом" type="number"></td>
+    <td><input id="поїздка-${i}-набуксирі" type="number"></td>
+    <td><input id="поїздка-${i}-намісці" type="number"></td>
+    <td><input id="поїздка-${i}-підчасруху" type="number"></td>
+    <td><input id="поїздка-${i}-мотогодини" type="number"></td>
+    <td><input id="поїздка-${i}-вантаж"></td>
+    <td><input id="поїздка-${i}-кількість" type="number" step="0.1"></td>
+    <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
+    <td class="del-col" onclick="видалитиРядокПоїздки(${i})">✕</td>`;
+  поїздкиТіло.appendChild(тр);
+  document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => обробитиРучнуЗмінуКм(i));
+}
+
+function додатиРядокПММ() {
+  створитиРядокПММ_(К_ПММ_РЯДКІВ);
+  К_ПММ_РЯДКІВ++;
+}
+
+function додатиРядокПоїздки() {
+  створитиРядокПоїздки_(К_ПОЇЗДКИ_РЯДКІВ);
+  К_ПОЇЗДКИ_РЯДКІВ++;
 }
 
 // ==================== ДОВІДНИКИ ====================
@@ -478,8 +510,14 @@ async function вибратиЛист(номер) {
     поточнийНомерЛиста = номер;
     очиститиФорму();
     заповнитиШапкуЗДаних(дані.шапка);
-    (дані.поїздки || []).forEach((п, i) => заповнитиРядокПоїздкиЗДаних(i, п));
-    (дані.пмм || []).forEach((з, i) => заповнитиРядокПММЗДаних(i, з));
+    (дані.поїздки || []).forEach((п, i) => {
+      while (i >= К_ПОЇЗДКИ_РЯДКІВ) додатиРядокПоїздки();
+      заповнитиРядокПоїздкиЗДаних(i, п);
+    });
+    (дані.пмм || []).forEach((з, i) => {
+      while (i >= К_ПММ_РЯДКІВ) додатиРядокПММ();
+      заповнитиРядокПММЗДаних(i, з);
+    });
     await завантажитиСписокЛистів();
     await оновитиПідсумокСторінки2();
     document.getElementById('підсумок-стор1').innerHTML = '';
@@ -869,6 +907,22 @@ async function зберегтиВсіДані() {
   }
 }
 
+// Очищає РЕЗУЛЬТАТИ розрахунку (Витрачено, Наявність на стоянці) для всіх рядків ПММ — не чіпає
+// того, що вписав сам водій (найменування, тип, наявність, отримано, належить). Потрібно, коли
+// розрахунок вийшов з помилковими вхідними даними і треба почати рахунок начисто.
+async function очиститиРозрахункиПММ() {
+  for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
+    document.getElementById(`пмм-${i}-стоянка`).textContent = '';
+    document.getElementById(`пмм-${i}-витрачено`).textContent = '';
+  }
+  if (поточнийНомерЛиста) {
+    try {
+      await викликАРІ('очиститиРозрахункиПММЛиста', { номерЛиста: поточнийНомерЛиста });
+    } catch (е) { /* не критично для UI, дані на екрані вже очищено */ }
+  }
+  повідомлення('л-повідомлення', 'Розрахунки ПММ очищено. Можна натиснути "Розрахунок ПММ" ще раз.', true);
+}
+
 async function розрахунокПММ() {
   if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
 
@@ -1111,6 +1165,52 @@ async function обратиВаріантМаршруту(i, відрізок, �
 
 // ---------- Виправлення точки, коли ORS не може прив'язати її до дороги ----------
 // ---------- Покрокове редагування точок уже введеного маршруту ----------
+// ---------- Наочний перегляд уже порахованого маршруту на карті ----------
+async function показатиМаршрутНаКарті(i) {
+  const текст = document.getElementById(`поїздка-${i}-маршрут`).value;
+  const пункти = текст.split('/').map(п => п.trim()).filter(Boolean);
+  if (пункти.length < 2) { повідомлення('л-повідомлення', 'Спочатку впиши маршрут у це поле.', false); return; }
+
+  прибратиКласифікаціюВРядку(i);
+  try {
+    const результат = await викликАРІ('отриматиГеометріюМаршруту', { пункти });
+
+    const рядок = document.createElement('tr');
+    рядок.className = 'classify-row';
+    рядок.id = 'вибір-маршруту-' + i;
+    const td = document.createElement('td');
+    td.colSpan = 15;
+    td.innerHTML = `<b>Маршрут: ${текст}</b>`;
+
+    const картаDiv = document.createElement('div');
+    картаDiv.id = 'мапа-' + i;
+    картаDiv.style.height = '360px';
+    картаDiv.style.margin = '8px 0';
+    картаDiv.style.borderRadius = '6px';
+    td.appendChild(картаDiv);
+
+    рядок.appendChild(td);
+    document.getElementById('поїздка-рядок-' + i).after(рядок);
+
+    const карта = L.map('мапа-' + i);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap', maxZoom: 19
+    }).addTo(карта);
+
+    const усіЛінії = [];
+    результат.сегменти.forEach(с => {
+      const латлонги = с.geometry.map(коорд => [коорд[1], коорд[0]]);
+      const лінія = L.polyline(латлонги, { color: '#d97b34', weight: 5, opacity: 0.85 }).addTo(карта);
+      усіЛінії.push(лінія);
+      L.marker([с.точкаА.lat, с.точкаА.lon]).addTo(карта).bindTooltip(с.від, { permanent: false });
+      L.marker([с.точкаБ.lat, с.точкаБ.lon]).addTo(карта).bindTooltip(с.до, { permanent: false });
+    });
+    карта.fitBounds(L.featureGroup(усіЛінії).getBounds(), { padding: [20, 20] });
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+  }
+}
+
 async function змінитиТочкиМаршруту(i) {
   const текст = document.getElementById(`поїздка-${i}-маршрут`).value;
   const унікальні = [...new Set(текст.split('/').map(п => п.trim()).filter(Boolean))];
