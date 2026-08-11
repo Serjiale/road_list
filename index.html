@@ -1048,6 +1048,11 @@ async function розрахуватиРядок(i) {
       кнопка.disabled = false; кнопка.textContent = '🧮';
       return;
     }
+    if (результат.потрібнеРучнеРозміщенняПункту) {
+      показатиРучнеРозміщенняВРядку(i, результат.пункт);
+      кнопка.disabled = false; кнопка.textContent = '🧮';
+      return;
+    }
     await зберегтиРядокПоїздки(i, результат.підсумок);
     кнопка.textContent = '✓';
   } catch (е) {
@@ -1296,6 +1301,72 @@ async function показатиРедагуванняТочкиПоЧерзі_(i
     try {
       await викликАРІ('оновитиКоординатиПункту', { назва, lat: позиція.lat, lon: позиція.lng });
       показатиРедагуванняТочкиПоЧерзі_(i, точки, індекс + 1);
+    } catch (е) {
+      повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+    }
+  };
+}
+
+// ---------- Ручне розміщення пункту, якого геокодування взагалі не знайшло ----------
+// (ні ORS, ні Nominatim не мають такої назви в базі, хоча пункт реально існує)
+function показатиРучнеРозміщенняВРядку(i, пункт) {
+  прибратиКласифікаціюВРядку(i);
+  const рядок = document.createElement('tr');
+  рядок.className = 'classify-row';
+  рядок.id = 'вибір-маршруту-' + i;
+  const td = document.createElement('td');
+  td.colSpan = 15;
+  td.innerHTML = `<b>"${пункт.назва}" не знайдено в жодній картографічній базі.</b>
+    Постав мітку самостійно (карта відкрита біля попереднього пункту маршруту — знайди й перетягни на потрібне місце),
+    і вкажи категорію та довжину проїзду:`;
+
+  const картаDiv = document.createElement('div');
+  картаDiv.id = 'мапа-' + i;
+  картаDiv.style.height = '320px';
+  картаDiv.style.margin = '8px 0';
+  картаDiv.style.borderRadius = '6px';
+  td.appendChild(картаDiv);
+
+  const формаDiv = document.createElement('div');
+  формаDiv.className = 'classify-box';
+  формаDiv.style.display = 'block';
+  формаDiv.innerHTML = `
+    Категорія:
+    <select id="ручне-${i}-категорія" style="width:auto; display:inline-block;">
+      <option value="Населений пункт без регульованих перехресть">Без регул.</option>
+      <option value="Місто з регульованими перехрестями">З регул.</option>
+      <option value="Обласний центр">Обл. центр</option>
+    </select>
+    Довжина проїзду:
+    <input id="ручне-${i}-довжина" type="number" step="0.1" style="width:60px; display:inline-block;" placeholder="км">`;
+  td.appendChild(формаDiv);
+
+  const кнопка = document.createElement('button');
+  кнопка.style.marginTop = '10px';
+  кнопка.textContent = 'Зберегти пункт і порахувати';
+  td.appendChild(кнопка);
+
+  рядок.appendChild(td);
+  document.getElementById('поїздка-рядок-' + i).after(рядок);
+
+  const карта = L.map('мапа-' + i).setView([пункт.lat, пункт.lon], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
+  }).addTo(карта);
+  const мітка = L.marker([пункт.lat, пункт.lon], { draggable: true }).addTo(карта)
+    .bindTooltip('Перетягни мене на "' + пункт.назва + '"', { permanent: true, direction: 'top' });
+
+  кнопка.onclick = async () => {
+    const позиція = мітка.getLatLng();
+    const категорія = document.getElementById(`ручне-${i}-категорія`).value;
+    const довжина = document.getElementById(`ручне-${i}-довжина`).value || 0;
+    try {
+      await викликАРІ('додатиНаселенийПункт', {
+        назва: пункт.назва, категорія: категорія, довжинаПроїзду: довжина,
+        lat: позиція.lat, lon: позиція.lng
+      });
+      прибратиКласифікаціюВРядку(i);
+      розрахуватиРядок(i);
     } catch (е) {
       повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
     }
