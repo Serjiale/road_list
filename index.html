@@ -146,8 +146,8 @@
       <table class="no-border" style="margin-bottom:2px;">
         <colgroup><col style="width:64.96%"><col style="width:35.04%"></colgroup>
         <tr class="no-border">
-          <td class="no-border">Дійсний до "<input id="л-дійснийдо-д" style="width:24px; display:inline; text-align:center;" placeholder="__">"
-            <input id="л-дійснийдо-м" style="width:120px; display:inline;" placeholder="_______________"> 20<input id="л-дійснийдо-р" style="width:30px; display:inline;" placeholder="__"> року</td>
+          <td class="no-border">Дійсний до "<select id="л-дійснийдо-д" style="width:44px; display:inline;"></select>"
+            <select id="л-дійснийдо-м" style="width:90px; display:inline;"></select> 20<select id="л-дійснийдо-р" style="width:50px; display:inline;"></select> року</td>
           <td class="no-border" style="font-size:10px;">Додаток 80<br>до Інструкції з обліку військового майна<br>у Збройних Силах України</td>
         </tr>
       </table>
@@ -180,10 +180,10 @@
         <tr>
           <td rowspan="2">Машина технічно справна<br><span class="label-sm">старший технік (технік) підрозділу</span><br>
             <input id="л-технікпіб" placeholder="звання, підпис, прізвище"><br>
-            "<input id="л-технікдата-д" style="width:20px; display:inline;" placeholder="__">" <input id="л-технікдата-м" style="width:70px; display:inline;" placeholder="_______"> 20<input id="л-технікдата-р" style="width:20px; display:inline;" placeholder="__"> року</td>
+            "<select id="л-технікдата-д" style="width:40px; display:inline;"></select>" <select id="л-технікдата-м" style="width:80px; display:inline;"></select> 20<select id="л-технікдата-р" style="width:46px; display:inline;"></select> року</td>
           <td rowspan="2">Технічний стан машини<br><span class="label-sm">перевірив начальник КТП</span><br>
             <input id="л-ктппіб" placeholder="звання, підпис, прізвище"><br>
-            "<input id="л-ктпдата-д" style="width:20px; display:inline;" placeholder="__">" <input id="л-ктпдата-м" style="width:70px; display:inline;" placeholder="_______"> 20<input id="л-ктпдата-р" style="width:20px; display:inline;" placeholder="__"> року</td>
+            "<select id="л-ктпдата-д" style="width:40px; display:inline;"></select>" <select id="л-ктпдата-м" style="width:80px; display:inline;"></select> 20<select id="л-ктпдата-р" style="width:46px; display:inline;"></select> року</td>
           <th colspan="2">Вибуття</th>
           <th colspan="2">Прибуття</th>
         </tr>
@@ -340,8 +340,27 @@ function handleCredentialResponse(response) {
   document.getElementById('вхід').style.display = 'none';
   document.getElementById('основна').style.display = 'block';
   побудуватиТаблиці();
+  заповнитиДатуСелекти_('л-дійснийдо');
+  заповнитиДатуСелекти_('л-технікдата');
+  заповнитиДатуСелекти_('л-ктпдата');
   завантажитиДовідники();
   завантажитиСписокЛистів();
+}
+
+const МІСЯЦІ_РОД = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+
+function заповнитиДатуСелекти_(префікс) {
+  const д = document.getElementById(`${префікс}-д`);
+  д.innerHTML = '<option value=""></option>' +
+    Array.from({ length: 31 }, (_, i) => i + 1).map(n => `<option value="${String(n).padStart(2, '0')}">${n}</option>`).join('');
+
+  const м = document.getElementById(`${префікс}-м`);
+  м.innerHTML = '<option value=""></option>' +
+    МІСЯЦІ_РОД.map(назва => `<option value="${назва}">${назва}</option>`).join('');
+
+  const р = document.getElementById(`${префікс}-р`);
+  р.innerHTML = '<option value=""></option>' +
+    ['24','25','26','27','28','29','30'].map(рік => `<option value="${рік}">${рік}</option>`).join('');
 }
 
 window.addEventListener('load', () => {
@@ -1180,7 +1199,10 @@ async function показатиМаршрутНаКарті(i) {
     рядок.id = 'вибір-маршруту-' + i;
     const td = document.createElement('td');
     td.colSpan = 15;
-    td.innerHTML = `<b>Маршрут: ${текст}</b>`;
+    td.style.position = 'relative';
+    td.innerHTML = `<b>Маршрут: ${текст}</b> — усього ${результат.усього.toFixed(1)} км
+      <span onclick="прибратиКласифікаціюВРядку(${i})" title="Закрити"
+        style="position:absolute; top:6px; right:10px; cursor:pointer; font-size:18px; font-weight:bold; color:#888; line-height:1;">✕</span>`;
 
     const картаDiv = document.createElement('div');
     картаDiv.id = 'мапа-' + i;
@@ -1201,6 +1223,7 @@ async function показатиМаршрутНаКарті(i) {
     результат.сегменти.forEach(с => {
       const латлонги = с.geometry.map(коорд => [коорд[1], коорд[0]]);
       const лінія = L.polyline(латлонги, { color: '#d97b34', weight: 5, opacity: 0.85 }).addTo(карта);
+      лінія.bindTooltip(`${с.від} → ${с.до}: ${с.км.toFixed(1)} км`, { sticky: true });
       усіЛінії.push(лінія);
       L.marker([с.точкаА.lat, с.точкаА.lon]).addTo(карта).bindTooltip(с.від, { permanent: false });
       L.marker([с.точкаБ.lat, с.точкаБ.lon]).addTo(карта).bindTooltip(с.до, { permanent: false });
