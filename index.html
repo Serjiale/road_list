@@ -122,7 +122,7 @@
 
   <div class="app-body">
     <aside class="sidebar">
-      <button onclick="створитиНовийЛист()">+ Створити дорожній лист</button>
+      <button id="btn-створити-лист" onclick="створитиНовийЛист()">+ Створити дорожній лист</button>
       <div id="список-листів"></div>
     </aside>
     <div class="main-content">
@@ -299,8 +299,8 @@
 
   <!-- ==================== ШАПКА-ДІЇ ==================== -->
   <div class="toolbar">
-    <button onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
-    <button onclick="розрахунокПММ()">Розрахунок ПММ</button>
+    <button id="btn-зберегти-все" onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
+    <button id="btn-розрахунок-пмм" onclick="розрахунокПММ()">Розрахунок ПММ</button>
   </div>
   <div id="л-повідомлення"></div>
 
@@ -359,8 +359,10 @@ function заповнитиДатуСелекти_(префікс) {
     МІСЯЦІ_РОД.map(назва => `<option value="${назва}">${назва}</option>`).join('');
 
   const р = document.getElementById(`${префікс}-р`);
+  const рікПочаток = new Date().getFullYear() % 100 - 1; // рік тому — про всяк випадок для запізнілого оформлення
+  const роки = Array.from({ length: 12 }, (_, i) => String(рікПочаток + i).padStart(2, '0'));
   р.innerHTML = '<option value=""></option>' +
-    ['24','25','26','27','28','29','30'].map(рік => `<option value="${рік}">${рік}</option>`).join('');
+    роки.map(рік => `<option value="${рік}">${рік}</option>`).join('');
 }
 
 window.addEventListener('load', () => {
@@ -615,7 +617,11 @@ function заповнитиРядокПММЗДаних(i, з) {
   if (i >= К_ПММ_РЯДКІВ) return;
   const тр = document.getElementById('пмм-рядок-' + i);
   тр.dataset.id = з.id;
-  if (з.тип) { тр.dataset.тип = з.тип; document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + (ТИПИ_ПММ[з.тип] || з.тип) + ')'; }
+  if (з.тип) {
+    тр.dataset.тип = з.тип;
+    тр.dataset.типДляНазви = з.найменування || '';
+    document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + (ТИПИ_ПММ[з.тип] || з.тип) + ')';
+  }
   document.getElementById(`пмм-${i}-найменування`).value = з.найменування || '';
   document.getElementById(`пмм-${i}-код`).value = з.код || '';
   document.getElementById(`пмм-${i}-наявність`).value = з.наявністьПеред || '';
@@ -770,6 +776,8 @@ async function створитиНовийЛист() {
 
   const цеТойСамийЛист = поточнийНомерЛиста && String(поточнийНомерЛиста) === String(номер);
   const дані = зібратиДаніШапки();
+  const кнопка = document.getElementById('btn-створити-лист');
+  кнопка.disabled = true;
   try {
     await викликАРІ('створитиДорожнійЛист', { дані });
     поточнийНомерЛиста = номер;
@@ -784,6 +792,8 @@ async function створитиНовийЛист() {
       цеТойСамийЛист ? 'Дорожній лист №' + номер + ' оновлено.' : 'Дорожній лист №' + номер + ' створено. Тепер внось поїздки і ПММ.', true);
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+  } finally {
+    кнопка.disabled = false;
   }
 }
 
@@ -800,7 +810,8 @@ const ТИПИ_ПММ = { 'паливо': 'паливо', 'adblue': 'AdBlue', '�
 function обробитиНайменуванняПММ(i) {
   const тр = document.getElementById('пмм-рядок-' + i);
   const назва = document.getElementById(`пмм-${i}-найменування`).value;
-  if (!назва || тр.dataset.тип) return; // порожньо, або тип уже обрано раніше
+  if (!назва) return;
+  if (тр.dataset.тип && тр.dataset.типДляНазви === назва) return; // тип уже обрано саме для цієї назви
   показатиПопапТипуПММ(i);
 }
 
@@ -831,6 +842,7 @@ function прибратиПопапТипуПММ(i) {
 async function обратиТипПММ(i, тип) {
   const тр = document.getElementById('пмм-рядок-' + i);
   тр.dataset.тип = тип;
+  тр.dataset.типДляНазви = document.getElementById(`пмм-${i}-найменування`).value;
   document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + ТИПИ_ПММ[тип] + ')';
   прибратиПопапТипуПММ(i);
 
@@ -880,6 +892,8 @@ async function зберегтиВсіДані() {
   const номер = document.getElementById('л-номер').value;
   if (!номер) { повідомлення('л-повідомлення', 'Впиши № документа, перш ніж зберігати.', false); return; }
 
+  const кнопка = document.getElementById('btn-зберегти-все');
+  кнопка.disabled = true;
   try {
     await викликАРІ('створитиДорожнійЛист', { дані: зібратиДаніШапки() });
     поточнийНомерЛиста = номер;
@@ -933,6 +947,8 @@ async function зберегтиВсіДані() {
       `✓ Збережено: шапка листа, поїздок — ${поїздокЗбережено}, записів ПММ — ${пммЗбережено}.`, true);
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка збереження: ' + е.message, false);
+  } finally {
+    кнопка.disabled = false;
   }
 }
 
@@ -975,6 +991,8 @@ async function розрахунокПММ() {
 
   if (!рядки.length) { повідомлення('л-повідомлення', 'Немає заповнених рядків ПММ.', false); return; }
 
+  const кнопка = document.getElementById('btn-розрахунок-пмм');
+  кнопка.disabled = true;
   try {
     const результат = await викликАРІ('розрахуватиТаЗберегтиПММЛиста', { номерЛиста: поточнийНомерЛиста, рядки });
     результат.результати.forEach((р, k) => {
@@ -989,6 +1007,8 @@ async function розрахунокПММ() {
       `Розраховано за кілометражем (${результат.підсумокКм.всього.toFixed(1)} км): збережено рядків — ${результат.результати.length}.`, true);
   } catch (е) {
     повідомлення('л-повідомлення', е.message, false);
+  } finally {
+    кнопка.disabled = false;
   }
 }
 
@@ -1016,6 +1036,7 @@ function скопіюватиРядокПММ_(звідки, куди) {
   document.getElementById(`пмм-${куди}-тип-мітка`).textContent = document.getElementById(`пмм-${звідки}-тип-мітка`).textContent;
   if (трЗвідки.dataset.id) трКуди.dataset.id = трЗвідки.dataset.id; else delete трКуди.dataset.id;
   if (трЗвідки.dataset.тип) трКуди.dataset.тип = трЗвідки.dataset.тип; else delete трКуди.dataset.тип;
+  if (трЗвідки.dataset.типДляНазви) трКуди.dataset.типДляНазви = трЗвідки.dataset.типДляНазви; else delete трКуди.dataset.типДляНазви;
 }
 
 function очиститиОдинРядокПММ_(i) {
@@ -1026,6 +1047,7 @@ function очиститиОдинРядокПММ_(i) {
   прибратиПопапТипуПММ(i);
   delete тр.dataset.id;
   delete тр.dataset.тип;
+  delete тр.dataset.типДляНазви;
 }
 
 function алертРядок(id, текст) {
