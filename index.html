@@ -213,10 +213,10 @@
         </tr>
         <tr>
           <td colspan="2" class="no-border"></td>
-          <td><input id="л-вибуттядата" type="datetime-local"></td>
-          <td><input id="л-вибуттяодометр" type="number"></td>
-          <td><input id="л-прибуттядата" type="datetime-local"></td>
-          <td><input id="л-прибуттяодометр" type="number"></td>
+          <td><input id="л-вибуттядата" type="datetime-local" class="center"></td>
+          <td><input id="л-вибуттяодометр" type="number" class="center"></td>
+          <td><input id="л-прибуттядата" type="datetime-local" class="center"></td>
+          <td><input id="л-прибуттяодометр" type="number" class="center"></td>
         </tr>
       </table>
 
@@ -233,10 +233,10 @@
         </tr>
         <tr>
           <td id="показ-номер" class="center readonly-cell"></td>
-          <td><input id="л-дата" type="date"></td>
+          <td><input id="л-дата" type="date" class="center"></td>
           <td><input id="л-підстава" placeholder="розпор."></td>
           <td id="показ-марка" class="center readonly-cell"></td>
-          <td><select id="л-машина"></select></td>
+          <td><select id="л-машина" class="center"></select></td>
           <td><input id="л-причіп"></td>
           <td><input id="л-причіпномер"></td>
           <td id="показ-група" class="center readonly-cell"></td>
@@ -432,16 +432,16 @@ function створитиРядокПММ_(i) {
   const тр = document.createElement('tr');
   тр.id = 'пмм-рядок-' + i;
   тр.innerHTML = `
-    <td><input id="пмм-${i}-найменування" placeholder="напр. ДП-1-Євро5 BO">
+    <td><input id="пмм-${i}-найменування" placeholder="Введи назву і вибери тип ПММ">
       <small id="пмм-${i}-тип-мітка" style="color:#888; display:block; font-size:9px;"></small></td>
     <td><input id="пмм-${i}-код"></td>
-    <td><input id="пмм-${i}-наявність" type="number" step="0.1"></td>
-    <td><input id="пмм-${i}-отримано" type="number" step="0.1"></td>
+    <td><input id="пмм-${i}-наявність" type="number" step="0.1" class="center"></td>
+    <td><input id="пмм-${i}-отримано" type="number" step="0.1" class="center"></td>
     <td id="пмм-${i}-стоянка" class="readonly-cell"></td>
     <td id="пмм-${i}-витрачено" class="readonly-cell"></td>
-    <td><input id="пмм-${i}-належить" type="number" step="0.1"></td>
-    <td><input id="пмм-${i}-економія" type="number" step="0.1"></td>
-    <td><input id="пмм-${i}-перевитрата" type="number" step="0.1"></td>
+    <td><input id="пмм-${i}-належить" type="number" step="0.1" class="center"></td>
+    <td><input id="пмм-${i}-економія" type="number" step="0.1" class="center"></td>
+    <td><input id="пмм-${i}-перевитрата" type="number" step="0.1" class="center"></td>
     <td class="del-col" onclick="видалитиРядокПММ(${i})">✕</td>`;
   пммТіло.appendChild(тр);
   document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
@@ -454,7 +454,7 @@ function створитиРядокПоїздки_(i) {
   тр.innerHTML = `
     <td><div class="route-cell">
       <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
-      <input id="поїздка-${i}-маршрут" placeholder="Ізюм / Балаклія / Ізюм">
+      <input id="поїздка-${i}-маршрут" placeholder='Введи населений пункт через "/"'>
       <button id="поїздка-${i}-кнопка-розрахувати" class="calc-btn" onclick="розрахуватиРядок(${i})" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
       <button class="calc-btn" onclick="показатиМаршрутНаКарті(${i})" title="Показати маршрут на карті для перевірки">🗺️</button>
       <button class="calc-btn" onclick="показатиКоригуванняМаршруту(${i})" title="Скоригувати маршрут вручну (додати проміжну точку)">🛠️</button></div>
@@ -464,16 +464,16 @@ function створитиРядокПоїздки_(i) {
         Зворотній шлях</label></td>
     <td><input id="поїздка-${i}-вибуття" type="datetime-local"></td>
     <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
-    <td><input id="поїздка-${i}-звантажем" type="number"></td>
-    <td><input id="поїздка-${i}-безвантажу" type="number"></td>
-    <td><input id="поїздка-${i}-усього" type="number" step="0.1"></td>
-    <td><input id="поїздка-${i}-зпричепом" type="number"></td>
-    <td><input id="поїздка-${i}-набуксирі" type="number"></td>
-    <td><input id="поїздка-${i}-намісці" type="number"></td>
-    <td><input id="поїздка-${i}-підчасруху" type="number"></td>
-    <td><input id="поїздка-${i}-мотогодини" type="number"></td>
-    <td><input id="поїздка-${i}-вантаж"></td>
-    <td><input id="поїздка-${i}-кількість" type="number" step="0.1"></td>
+    <td><input id="поїздка-${i}-звантажем" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-безвантажу" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-усього" type="number" step="0.1" class="center"></td>
+    <td><input id="поїздка-${i}-зпричепом" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-набуксирі" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-намісці" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-підчасруху" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-мотогодини" type="number" class="center"></td>
+    <td><input id="поїздка-${i}-вантаж" class="center"></td>
+    <td><input id="поїздка-${i}-кількість" type="number" step="0.1" class="center"></td>
     <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
     <td class="del-col" onclick="видалитиРядокПоїздки(${i})">✕</td>`;
   поїздкиТіло.appendChild(тр);
@@ -488,6 +488,20 @@ function додатиРядокПММ() {
 function додатиРядокПоїздки() {
   створитиРядокПоїздки_(К_ПОЇЗДКИ_РЯДКІВ);
   К_ПОЇЗДКИ_РЯДКІВ++;
+}
+
+function обрізатиРядкиПММДо_(кількість) {
+  while (К_ПММ_РЯДКІВ > кількість) {
+    document.getElementById('пмм-рядок-' + (К_ПММ_РЯДКІВ - 1)).remove();
+    К_ПММ_РЯДКІВ--;
+  }
+}
+
+function обрізатиРядкиПоїздокДо_(кількість) {
+  while (К_ПОЇЗДКИ_РЯДКІВ > кількість) {
+    document.getElementById('поїздка-рядок-' + (К_ПОЇЗДКИ_РЯДКІВ - 1)).remove();
+    К_ПОЇЗДКИ_РЯДКІВ--;
+  }
 }
 
 // ==================== ДОВІДНИКИ ====================
@@ -562,6 +576,10 @@ async function вибратиЛист(номер) {
     поточнийНомерЛиста = номер;
     очиститиФорму();
     заповнитиШапкуЗДаних(дані.шапка);
+    // Підганяємо кількість рядків рівно під те, що реально збережено — інакше раніше видалені
+    // (тепер уже порожні) рядки просто поверталися б назад при кожному завантаженні листа.
+    обрізатиРядкиПоїздокДо_(Math.max((дані.поїздки || []).length, 1));
+    обрізатиРядкиПММДо_(Math.max((дані.пмм || []).length, 1));
     (дані.поїздки || []).forEach((п, i) => {
       while (i >= К_ПОЇЗДКИ_РЯДКІВ) додатиРядокПоїздки();
       заповнитиРядокПоїздкиЗДаних(i, п);
@@ -1054,12 +1072,7 @@ async function видалитиРядокПММ(i) {
   }
   // Не просто чистимо останній рядок — прибираємо його насправді, щоб таблиця могла зменшуватись
   // у відповідь на видалення, так само як вона росте від "+ Додати рядок". Лишаємо щонайменше 1.
-  if (К_ПММ_РЯДКІВ > 1) {
-    document.getElementById('пмм-рядок-' + (К_ПММ_РЯДКІВ - 1)).remove();
-    К_ПММ_РЯДКІВ--;
-  } else {
-    очиститиОдинРядокПММ_(0);
-  }
+  if (К_ПММ_РЯДКІВ > 1) обрізатиРядкиПММДо_(К_ПММ_РЯДКІВ - 1); else очиститиОдинРядокПММ_(0);
 }
 
 function скопіюватиРядокПММ_(звідки, куди) {
@@ -1803,12 +1816,7 @@ async function видалитиРядокПоїздки(i) {
   }
   // Не просто чистимо останній рядок — прибираємо його насправді, щоб таблиця могла зменшуватись
   // у відповідь на видалення, так само як вона росте від "+ Додати рядок". Лишаємо щонайменше 1.
-  if (К_ПОЇЗДКИ_РЯДКІВ > 1) {
-    document.getElementById('поїздка-рядок-' + (К_ПОЇЗДКИ_РЯДКІВ - 1)).remove();
-    К_ПОЇЗДКИ_РЯДКІВ--;
-  } else {
-    очиститиОдинРядокПоїздки_(0);
-  }
+  if (К_ПОЇЗДКИ_РЯДКІВ > 1) обрізатиРядкиПоїздокДо_(К_ПОЇЗДКИ_РЯДКІВ - 1); else очиститиОдинРядокПоїздки_(0);
   перерахуватиОдометриПісля(0);
   оновитиПідсумокСторінки2();
 }
