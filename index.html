@@ -122,6 +122,7 @@
     <div class="eyebrow">Корпорація «Інтелект»</div>
     <h1>Дорожній лист</h1>
     <div id="хто-увійшов" style="font-size:12px; color:var(--dim); margin-top:4px;"></div>
+    <div id="л-повідомлення" style="margin-top:10px;"></div>
   </header>
 
   <div class="app-body">
@@ -309,7 +310,6 @@
     <button id="btn-зберегти-все" onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
     <button id="btn-розрахунок-пмм" onclick="розрахунокПММ()">Розрахунок ПММ</button>
   </div>
-  <div id="л-повідомлення"></div>
 
   <!-- ==================== EXCEL ==================== -->
   <div id="панель-excel" class="panel">
@@ -400,8 +400,12 @@ async function викликАРІ(дія, параметри) {
   return результат.дані;
 }
 
+const повідомленняТаймаути = {};
 function повідомлення(id, текст, ок) {
-  document.getElementById(id).innerHTML = `<div class="msg ${ок ? 'ok' : 'err'}">${текст}</div>`;
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg ${ок ? 'ok' : 'err'}">${текст}</div>`;
+  if (повідомленняТаймаути[id]) clearTimeout(повідомленняТаймаути[id]);
+  повідомленняТаймаути[id] = setTimeout(() => { el.innerHTML = ''; }, 10000);
 }
 
 // ==================== ПОБУДОВА ПОРОЖНІХ РЯДКІВ ====================
@@ -616,6 +620,7 @@ function заповнитиРядокПоїздкиЗДаних(i, п) {
   document.getElementById(`поїздка-${i}-мотогодини`).value = п.мотогодини || '';
   document.getElementById(`поїздка-${i}-вантаж`).value = п.вантаж || '';
   document.getElementById(`поїздка-${i}-спідометр`).textContent = п.спідометр || '';
+  document.getElementById(`поїздка-${i}-зворотній`).checked = !!п.зворотній;
   const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
   if (кнопка) кнопка.textContent = '✓';
 }
@@ -725,6 +730,7 @@ function очиститиФорму() {
     });
     document.getElementById(`поїздка-${i}-усього`).value = '';
     document.getElementById(`поїздка-${i}-спідометр`).textContent = '';
+    document.getElementById(`поїздка-${i}-зворотній`).checked = false;
     прибратиКласифікаціюВРядку(i);
     delete тр.dataset.id;
     delete підсумкиПоїздок[i];
@@ -920,6 +926,7 @@ async function зберегтиВсіДані() {
         мотогодини: document.getElementById(`поїздка-${i}-мотогодини`).value,
         вантаж: document.getElementById(`поїздка-${i}-вантаж`).value,
         спідометр: document.getElementById(`поїздка-${i}-спідометр`).textContent,
+        зворотній: document.getElementById(`поїздка-${i}-зворотній`).checked,
         підсумок: підсумкиПоїздок[i]
       };
       await викликАРІ('зберегтиПоїздку', { дані });
@@ -1661,6 +1668,7 @@ async function зберегтиРядокПоїздки(i, підсумок) {
     мотогодини: document.getElementById(`поїздка-${i}-мотогодини`).value,
     вантаж: document.getElementById(`поїздка-${i}-вантаж`).value,
     спідометр: одометр,
+    зворотній: document.getElementById(`поїздка-${i}-зворотній`).checked,
     підсумок
   };
   const результат = await викликАРІ('зберегтиПоїздку', { дані });
@@ -1739,6 +1747,7 @@ async function обробитиРучнуЗмінуКм(i) {
     мотогодини: document.getElementById(`поїздка-${i}-мотогодини`).value,
     вантаж: document.getElementById(`поїздка-${i}-вантаж`).value,
     спідометр: розрахуватиОдометрДляРядка(i, нове),
+    зворотній: document.getElementById(`поїздка-${i}-зворотній`).checked,
     підсумок
   };
   try {
@@ -1772,6 +1781,7 @@ function скопіюватиРядокПоїздки_(звідки, куди) {
     document.getElementById(`поїздка-${куди}-${п}`).value = document.getElementById(`поїздка-${звідки}-${п}`).value;
   });
   document.getElementById(`поїздка-${куди}-спідометр`).textContent = document.getElementById(`поїздка-${звідки}-спідометр`).textContent;
+  document.getElementById(`поїздка-${куди}-зворотній`).checked = document.getElementById(`поїздка-${звідки}-зворотній`).checked;
   if (трЗвідки.dataset.id) трКуди.dataset.id = трЗвідки.dataset.id; else delete трКуди.dataset.id;
   підсумкиПоїздок[куди] = підсумкиПоїздок[звідки];
   delete підсумкиПоїздок[звідки];
@@ -1787,6 +1797,7 @@ function очиститиОдинРядокПоїздки_(i) {
     if (el) el.value = '';
   });
   document.getElementById(`поїздка-${i}-спідометр`).textContent = '';
+  document.getElementById(`поїздка-${i}-зворотній`).checked = false;
   прибратиКласифікаціюВРядку(i);
   delete тр.dataset.id;
   delete підсумкиПоїздок[i];
