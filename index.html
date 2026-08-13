@@ -22,10 +22,15 @@
   }
   header.top{ padding:20px 24px 14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#1c1713,#171310); position:relative; }
   header.top::before{ content:""; position:absolute; left:0; right:0; top:0; height:3px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.6; }
-  .header-inner{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
-  .header-left{ flex-shrink:0; }
-  .header-msg{ flex:1; min-width:0; }
-  .header-msg .msg{ margin:0; }
+  .header-inner{ position:relative; }
+  .header-left{ }
+  /* Позиціонуємо незалежно від заголовка (яка лишається на своєму місці) і повторюємо ту саму
+     "коробку", що й .paper нижче: відступ під сайдбар (220px) + 24px падінг + той самий ліміт
+     1500px, що й центрується так само. Абсолютне позиціювання гарантує, що поява/зникнення
+     повідомлення ніколи не зсуває нічого в шапці. */
+  .header-msg{ position:absolute; top:0; left:220px; right:0; padding:0 24px; box-sizing:border-box;
+    max-width:1548px; margin:0 auto; text-align:right; }
+  .header-msg .msg{ margin:0; display:inline-block; text-align:left; }
   .eyebrow{ font-family:monospace; font-size:11px; letter-spacing:.14em; color:var(--accent); text-transform:uppercase; }
   h1{ margin:4px 0 0; font-size:20px; }
 
