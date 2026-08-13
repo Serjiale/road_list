@@ -28,7 +28,8 @@
   #вхід{ text-align:center; padding-top:80px; }
   #вхід-помилка{ color:#f0a; margin-top:10px; }
 
-  .tabs-row{ display:flex; align-items:center; gap:18px; padding:14px 24px; flex-wrap:wrap; }
+  .tabs-row-outer{ padding:14px 24px; }
+  .tabs-row{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; max-width:1500px; margin:0 auto; }
   .tabs{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
   .tab{ padding:8px 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--dim); font-size:13px; }
   .tab.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); font-weight:bold; }
@@ -130,6 +131,7 @@
     </aside>
     <div class="main-content">
 
+  <div class="tabs-row-outer">
   <div class="tabs-row">
     <div class="tabs">
       <div class="tab active" data-tab="стор1">Сторінка 1</div>
@@ -142,6 +144,7 @@
     <div id="панель-стор2-топ" class="summary-top" style="display:none;">
       <div id="підсумок-стор2" class="summary-block"></div>
     </div>
+  </div>
   </div>
 
   <!-- ==================== СТОРІНКА 1 ==================== -->
