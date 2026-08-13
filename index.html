@@ -28,7 +28,8 @@
   #вхід{ text-align:center; padding-top:80px; }
   #вхід-помилка{ color:#f0a; margin-top:10px; }
 
-  .tabs{ display:flex; gap:8px; padding:14px 24px; flex-wrap:wrap; }
+  .tabs-row{ display:flex; align-items:center; gap:18px; padding:14px 24px; flex-wrap:wrap; }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
   .tab{ padding:8px 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--dim); font-size:13px; }
   .tab.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); font-weight:bold; }
   .panel{ display:none; padding:0 24px; } .panel.active{ display:block; }
@@ -81,18 +82,18 @@
   .classify-box select, .classify-box input{ width:auto !important; display:inline-block; }
 
   .add-row-form{ max-width:1500px; margin:0 auto 16px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; }
+  .summary-top{ flex:1; min-width:0; }
   .summary-block{ background:linear-gradient(180deg,#1c1713,#171310); border:1px solid var(--border); border-radius:8px;
-    padding:14px 18px; }
+    padding:8px 16px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
   .summary-block:empty{ display:none; }
-  .summary-caption{ font-family:monospace; font-size:10px; letter-spacing:.1em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; }
-  .summary-period{ font-size:12px; color:var(--dim); margin-bottom:10px; }
-  .summary-stats{ display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between; }
-  .summary-stat{ display:flex; flex-direction:column; min-width:70px; }
-  .summary-stat .value{ font-size:22px; font-weight:bold; color:var(--text); line-height:1.1; }
+  .summary-text{ flex-shrink:0; }
+  .summary-caption{ font-family:monospace; font-size:10px; letter-spacing:.1em; color:var(--accent); text-transform:uppercase; }
+  .summary-period{ font-size:11px; color:var(--dim); margin-top:2px; }
+  .summary-stats{ display:flex; gap:22px; flex-wrap:wrap; justify-content:flex-end; flex:1; }
+  .summary-stat{ display:flex; align-items:baseline; gap:5px; white-space:nowrap; }
+  .summary-stat .value{ font-size:15px; font-weight:bold; color:var(--text); }
   .summary-stat .value.main{ color:var(--accent); }
-  .summary-stat .label{ font-size:10.5px; color:var(--dim); margin-top:2px; }
-
-  .summary-top{ padding:0 24px; }
+  .summary-stat .label{ font-size:10.5px; color:var(--dim); }
 
   .app-body{ display:flex; align-items:flex-start; gap:0; }
   .sidebar{ width:220px; flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
@@ -129,17 +130,18 @@
     </aside>
     <div class="main-content">
 
-  <div class="tabs">
-    <div class="tab active" data-tab="стор1">Сторінка 1</div>
-    <div class="tab" data-tab="стор2">Сторінка 2</div>
-    <div class="tab" data-tab="excel">Excel</div>
-  </div>
-
-  <div id="панель-стор1-топ" class="summary-top">
-    <div id="підсумок-стор1" class="summary-block" style="max-width:1500px; margin:0 auto 16px;"></div>
-  </div>
-  <div id="панель-стор2-топ" class="summary-top" style="display:none;">
-    <div id="підсумок-стор2" class="summary-block" style="max-width:1500px; margin:0 auto 16px;"></div>
+  <div class="tabs-row">
+    <div class="tabs">
+      <div class="tab active" data-tab="стор1">Сторінка 1</div>
+      <div class="tab" data-tab="стор2">Сторінка 2</div>
+      <div class="tab" data-tab="excel">Excel</div>
+    </div>
+    <div id="панель-стор1-топ" class="summary-top">
+      <div id="підсумок-стор1" class="summary-block"></div>
+    </div>
+    <div id="панель-стор2-топ" class="summary-top" style="display:none;">
+      <div id="підсумок-стор2" class="summary-block"></div>
+    </div>
   </div>
 
   <!-- ==================== СТОРІНКА 1 ==================== -->
@@ -658,9 +660,9 @@ function побудуватиКарткиКм_(підсумокКм) {
     <div class="summary-stats">
       <div class="summary-stat"><span class="value main">${підсумокКм.всього.toFixed(1)}</span><span class="label">усього, км</span></div>
       <div class="summary-stat"><span class="value">${підсумокКм['Траса'].toFixed(1)}</span><span class="label">шосе</span></div>
-      <div class="summary-stat"><span class="value">${підсумокКм['Обласний центр'].toFixed(1)}</span><span class="label">обласний центр</span></div>
-      <div class="summary-stat"><span class="value">${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)}</span><span class="label">з регул. перехрестями</span></div>
-      <div class="summary-stat"><span class="value">${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)}</span><span class="label">без регул. перехресть</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Обласний центр'].toFixed(1)}</span><span class="label">обл. центр</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Місто з регульованими перехрестями'].toFixed(1)}</span><span class="label">з рег. перех.</span></div>
+      <div class="summary-stat"><span class="value">${підсумокКм['Населений пункт без регульованих перехресть'].toFixed(1)}</span><span class="label">без рег. перех.</span></div>
     </div>`;
 }
 
@@ -668,7 +670,7 @@ function оновитиПідсумокСторінки1(підсумокКм) {
   const el = document.getElementById('підсумок-стор1');
   if (!підсумокКм || !підсумокКм.всього) { el.innerHTML = ''; return; }
   el.innerHTML =
-    `<div class="summary-caption">Витрата пального і мастильних матеріалів — розрахунок за кілометражем</div>` +
+    `<div class="summary-text"><div class="summary-caption">Витрата пального — за кілометражем</div></div>` +
     побудуватиКарткиКм_(підсумокКм);
 }
 
@@ -690,8 +692,10 @@ async function оновитиПідсумокСторінки2() {
     }
 
     el.innerHTML =
-      `<div class="summary-caption">Робота машини — за весь дорожній лист</div>` +
-      `<div class="summary-period">Період: ${форматДляПоказу(мінВибуття)} → ${форматДляПоказу(максПрибуття)}</div>` +
+      `<div class="summary-text">
+         <div class="summary-caption">Робота машини — за весь дорожній лист</div>
+         <div class="summary-period">Період: ${форматДляПоказу(мінВибуття)} → ${форматДляПоказу(максПрибуття)}</div>
+       </div>` +
       побудуватиКарткиКм_(підсумокКм);
   } catch (е) {
     // тихо ігноруємо — це лише довідковий блок, не критична дія
@@ -1326,6 +1330,7 @@ async function показатиРедагуванняСегмента_(i, сег
       }
       if (лініяМаршруту) карта.removeLayer(лініяМаршруту);
       лініяМаршруту = L.polyline(геометріяLatLng, { color: '#d97b34', weight: 5, opacity: 0.85 }).addTo(карта);
+      карта.invalidateSize(); // контейнер міг ще не мати остаточного розміру на момент L.map() — інакше лінія малюється "в нікуди"
       карта.fitBounds(лініяМаршруту.getBounds(), { padding: [20, 20] });
       document.getElementById(`коригування-км-${i}`).textContent = `Разом: ${усього.toFixed(1)} км`;
       останнєКоригування[i] = { км: Math.round(усього * 10) / 10, geometry: геометріяLatLng.map(c => [c[1], c[0]]) }; // назад у [lon,lat] для збереження
@@ -1342,6 +1347,7 @@ async function показатиРедагуванняСегмента_(i, сег
   if (збережене.знайдено) {
     const геометріяLatLng = збережене.geometry.map(c => [c[1], c[0]]);
     лініяМаршруту = L.polyline(геометріяLatLng, { color: '#d97b34', weight: 5, opacity: 0.85 }).addTo(карта);
+    карта.invalidateSize(); // контейнер міг ще не мати остаточного розміру на момент L.map() — інакше лінія малюється "в нікуди"
     карта.fitBounds(лініяМаршруту.getBounds(), { padding: [20, 20] });
     document.getElementById(`коригування-км-${i}`).textContent = `Разом: ${збережене.км.toFixed(1)} км (збережений варіант)`;
     останнєКоригування[i] = { км: збережене.км, geometry: збережене.geometry };
