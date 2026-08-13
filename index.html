@@ -390,6 +390,15 @@ window.addEventListener('load', () => {
   google.accounts.id.renderButton(document.getElementById('googleBtn'), { theme: 'filled_black', size: 'large', text: 'signin_with' });
 });
 
+// Enter у звичайному полі поза формою сам по собі не знімає фокус — а деякі поля (напр.
+// найменування ПММ) чекають саме на blur, щоб спрацювати. Робимо Enter рівнозначним виходу
+// з поля кліком/Tab, щоб не доводилось тицяти мишкою деінде після кожного введення.
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') {
+    e.target.blur();
+  }
+});
+
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
