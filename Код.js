@@ -235,6 +235,14 @@ function створитиДорожнійЛист(дані) {
 }
 
 // ==================== ГЕОКОДУВАННЯ ТА ВІДСТАНІ ====================
+// encodeURIComponent() навмисно НЕ екранує апостроф (' лишається "unreserved" за старим
+// стандартом ECMA-262) — а Apps Script's UrlFetchApp відмовляється виконувати URL із таким
+// сирим апострофом усередині ("Недійсна адреса"). Українські назви населених пунктів регулярно
+// містять апостроф (Слов'янськ, Кам'янець-Подільський), тож довкодовуємо його вручну.
+function кодуватиURI_(текст) {
+  return encodeURIComponent(текст).replace(/'/g, '%27');
+}
+
 function отриматиORSКлюч_() {
   const ключ = PropertiesService.getScriptProperties().getProperty('ORS_API_KEY');
   if (!ключ) throw new Error('ORS API ключ не встановлено. Меню "Дорожні листи" → "Встановити ORS API ключ".');
@@ -255,7 +263,7 @@ function отриматиКоординати_(назва, біасКоор) {
 
   const ключ = отриматиORSКлюч_();
   let url = 'https://api.openrouteservice.org/geocode/search?api_key=' + encodeURIComponent(ключ) +
-    '&text=' + encodeURIComponent(назва + ', Україна') + '&boundary.country=UKR&size=1';
+    '&text=' + кодуватиURI_(назва + ', Україна') + '&boundary.country=UKR&size=1';
   // Якщо відома координата попереднього пункту маршруту — підказуємо геокодеру шукати ближче до неї,
   // і додатково жорстко обмежуємо пошук радіусом 100 км навколо неї. Це вирішує проблему однойменних
   // населених пунктів у різних областях (напр. кілька "Маліївка", одна з яких за ~150 км). Свідомо НЕ
@@ -306,7 +314,7 @@ function геокодуватиNominatim_(назва, біасКоор) {
   try {
     Utilities.sleep(1000);
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' +
-      encodeURIComponent(назва + ', Україна');
+      кодуватиURI_(назва + ', Україна');
     if (біасКоор) {
       const дельтаШирота = 0.9; // ~100км
       const дельтаДовгота = 0.9 / Math.cos(біасКоор.lat * Math.PI / 180);
@@ -333,7 +341,7 @@ function отриматиМежіПункту_(назва) {
   try {
     Utilities.sleep(1000);
     const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&limit=1&q=' +
-      encodeURIComponent(назва + ', Україна');
+      кодуватиURI_(назва + ', Україна');
     const відповідь = fetchЗПовтором_(url, {
       headers: { 'User-Agent': 'DorozhniyList-VijskovaLogistyka/1.0 (arsord-logistics)' },
       muteHttpExceptions: true
