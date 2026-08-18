@@ -13,6 +13,7 @@
   :root{
     --bg:#151210; --bg2:#1d1916; --panel:#211c18; --border:#3a322a;
     --text:#e9e2d8; --dim:#a89a87; --accent:#d97b34; --accent2:#c25b1f; --danger:#c0392b;
+    --sidebar-w:460px;
   }
   *{box-sizing:border-box;}
   body{
@@ -25,10 +26,10 @@
   .header-inner{ position:relative; }
   .header-left{ }
   /* Позиціонуємо незалежно від заголовка (яка лишається на своєму місці) і повторюємо ту саму
-     "коробку", що й .paper нижче: відступ під сайдбар (220px) + 24px падінг + той самий ліміт
-     1500px, що й центрується так само. Абсолютне позиціювання гарантує, що поява/зникнення
+     "коробку", що й .paper нижче: відступ під сайдбар (--sidebar-w) + 24px падінг + той самий
+     ліміт 1500px, що й центрується так само. Абсолютне позиціювання гарантує, що поява/зникнення
      повідомлення ніколи не зсуває нічого в шапці. */
-  .header-msg{ position:absolute; top:0; left:220px; right:0; padding:0 24px; box-sizing:border-box;
+  .header-msg{ position:absolute; top:0; left:var(--sidebar-w); right:0; padding:0 24px; box-sizing:border-box;
     max-width:1548px; margin:0 auto; text-align:left; }
   .header-msg .msg{ margin:0; display:inline-block; text-align:left; }
   .eyebrow{ font-family:monospace; font-size:11px; letter-spacing:.14em; color:var(--accent); text-transform:uppercase; }
@@ -44,11 +45,29 @@
   .tab.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); font-weight:bold; }
   .panel{ display:none; padding:0 24px; } .panel.active{ display:block; }
 
+  /* Тулбар "Підрозділи" — окремий "таб", але з випадаючим меню при наведенні (лише в Адміна;
+     в учасника це просто клікабельна назва його єдиного підрозділу, без меню). */
+  .dept-tab{ position:relative; }
+  .dept-dropdown{ display:none; position:absolute; top:100%; left:0; margin-top:6px;
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; min-width:180px;
+    z-index:30; box-shadow:0 10px 30px rgba(0,0,0,.5); overflow:hidden; }
+  .dept-tab:hover .dept-dropdown{ display:block; }
+  .dept-dropdown-item{ padding:9px 14px; cursor:pointer; font-size:13px; color:var(--text); white-space:nowrap; }
+  .dept-dropdown-item:hover{ background:var(--accent); color:#1a1310; }
+
   /* Аркуш А4 landscape: пропорція ширина:висота ≈ 297:210 = 1.414 */
   .paper{
+    position:relative;
     background:#f7f4ee; color:#111; border-radius:2px; padding:18px 22px;
     max-width:1500px; width:100%; margin:0 auto 20px; box-shadow:0 8px 30px rgba(0,0,0,.4);
     font-size:14px; aspect-ratio:297/210; overflow-y:auto;
+  }
+  /* Вотермарка закритого листа — поверх аркуша, але не блокує прокрутку/перегляд під нею. */
+  .paper.closed::after{
+    content:"ЗАКРИТИЙ"; position:absolute; top:45%; left:50%; transform:translate(-50%,-50%) rotate(-16deg);
+    font-size:min(9vw, 72px); font-weight:900; letter-spacing:.15em; color:rgba(192,57,43,.72);
+    border:6px solid rgba(192,57,43,.72); border-radius:10px; padding:6px 36px; white-space:nowrap;
+    pointer-events:none; z-index:6;
   }
   .paper table{ border-collapse:collapse; width:100%; table-layout:fixed; }
   .paper td, .paper th{ border:1px solid #333; padding:3px 4px; vertical-align:middle; font-size:13px; overflow:hidden; }
@@ -106,12 +125,18 @@
   .summary-stat .label{ font-size:10.5px; color:var(--dim); }
 
   .app-body{ display:flex; align-items:flex-start; gap:0; }
-  .sidebar{ width:220px; flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
+  .sidebar{ width:var(--sidebar-w); flex-shrink:0; padding:14px; border-right:1px solid var(--border); min-height:60vh; }
+  .sidebar-hint{ color:var(--dim); font-size:13px; padding:8px 2px; }
+  .sidebar-body{ display:flex; gap:0; align-items:flex-start; }
+  .sidebar-col{ flex:1; min-width:0; }
+  .sidebar-col-лісти{ border-left:1px solid var(--border); padding-left:12px; margin-left:12px; }
   .sidebar button{ width:100%; margin-bottom:12px; }
   .list-item{ padding:8px 10px; border:1px solid var(--border); border-radius:6px; margin-bottom:6px;
     cursor:pointer; font-size:13.5px; background:var(--panel); }
   .list-item:hover{ border-color:var(--accent); }
   .list-item.active{ background:var(--accent); color:#1a1310; border-color:var(--accent); }
+  .list-item.closed{ border-color:var(--danger); }
+  .list-item.closed:not(.active){ color:#ff9a90; }
   .list-item small{ opacity:0.8; }
   .main-content{ flex:1; min-width:0; }
 </style>
@@ -140,8 +165,14 @@
 
   <div class="app-body">
     <aside class="sidebar">
-      <button id="btn-створити-лист" onclick="створитиНовийЛист()">+ Створити дорожній лист</button>
-      <div id="список-листів"></div>
+      <div id="sidebar-підказка" class="sidebar-hint">Обери підрозділ зверху (в табах), щоб побачити його машини.</div>
+      <div id="sidebar-body" class="sidebar-body" style="display:none;">
+        <div class="sidebar-col" id="sidebar-машини"></div>
+        <div class="sidebar-col sidebar-col-лісти" id="sidebar-листи" style="display:none;">
+          <button id="btn-створити-лист" class="secondary" onclick="створитиЛистЗМашини()">+ Створити дорожній лист</button>
+          <div id="список-листів-машини"></div>
+        </div>
+      </div>
     </aside>
     <div class="main-content">
 
@@ -151,6 +182,10 @@
       <div class="tab active" data-tab="стор1">Сторінка 1</div>
       <div class="tab" data-tab="стор2">Сторінка 2</div>
       <div class="tab" data-tab="excel">Excel</div>
+      <div class="tab dept-tab" id="tab-підрозділи">
+        <span id="підрозділ-мітка">Підрозділи</span>
+        <div class="dept-dropdown" id="підрозділ-дропдаун"></div>
+      </div>
     </div>
     <div id="панель-стор1-топ" class="summary-top">
       <div id="підсумок-стор1" class="summary-block"></div>
@@ -322,6 +357,7 @@
   <div class="toolbar">
     <button id="btn-зберегти-все" onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
     <button id="btn-розрахунок-пмм" onclick="розрахунокПММ()">Розрахунок ПММ</button>
+    <button id="btn-закрити-лист" class="secondary" onclick="перемкнутиЗакриттяЛиста_()">Закрити дорожній лист</button>
   </div>
 
   <!-- ==================== EXCEL ==================== -->
@@ -364,7 +400,6 @@ function handleCredentialResponse(response) {
   заповнитиДатуСелекти_('л-технікдата');
   заповнитиДатуСелекти_('л-ктпдата');
   завантажитиДовідники();
-  завантажитиСписокЛистів();
 }
 
 const МІСЯЦІ_РОД = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
@@ -514,9 +549,16 @@ function обрізатиРядкиПоїздокДо_(кількість) {
 }
 
 // ==================== ДОВІДНИКИ ====================
+let поточнаРоль = null;
+let поточнийПідрозділ = null;
+
 async function завантажитиДовідники() {
   try {
     const д = await викликАРІ('отриматиДовідники');
+    поточнаРоль = д.роль;
+    поточнийПідрозділ = д.підрозділ;
+    налаштуватиТулбарПідрозділів_();
+
     const селМашина = document.getElementById('л-машина');
     селМашина.innerHTML = '';
     (д.машиниДеталі || []).forEach(м => {
@@ -562,20 +604,131 @@ const підсумкиПоїздок = {}; // i -> {всього, Траса, '�
 const проміжніТочкиКоригування = {}; // i -> [L.Marker, ...] мітки проміжних точок при ручному коригуванні
 const останнєКоригування = {}; // i -> {км, geometry} останній порахований варіант коригування
 
-async function завантажитиСписокЛистів() {
+// ==================== НАВІГАЦІЯ: ТУЛБАР "ПІДРОЗДІЛИ" → МАШИНИ → ЛИСТИ МАШИНИ ====================
+let обранийПідрозділНавігації = null;
+let обранаМашинаНавігації = null; // {держНомер, марка, закріпленийВодій} — обрана картка в сайдбарі
+
+function налаштуватиТулбарПідрозділів_() {
+  const мітка = document.getElementById('підрозділ-мітка');
+  const дропдаун = document.getElementById('підрозділ-дропдаун');
+  const таб = document.getElementById('tab-підрозділи');
+  дропдаун.innerHTML = '';
+
+  if (поточнаРоль === 'Адмін') {
+    мітка.textContent = 'Підрозділи ▾';
+    таб.onclick = null;
+    викликАРІ('отриматиПідрозділи').then(підрозділи => {
+      (підрозділи || []).forEach(назва => {
+        const пункт = document.createElement('div');
+        пункт.className = 'dept-dropdown-item';
+        пункт.textContent = назва;
+        пункт.onclick = () => обратиПідрозділ_(назва);
+        дропдаун.appendChild(пункт);
+      });
+    }).catch(() => { /* не критично для решти форми */ });
+  } else {
+    мітка.textContent = поточнийПідрозділ || '(підрозділ не вказано)';
+    таб.onclick = () => обратиПідрозділ_(поточнийПідрозділ);
+  }
+}
+
+async function обратиПідрозділ_(назва) {
+  обранийПідрозділНавігації = назва;
+  обранаМашинаНавігації = null;
+  document.getElementById('sidebar-підказка').style.display = 'none';
+  document.getElementById('sidebar-body').style.display = 'flex';
+  document.getElementById('sidebar-листи').style.display = 'none';
+
+  const контейнер = document.getElementById('sidebar-машини');
+  контейнер.innerHTML = 'Завантаження…';
   try {
-    const листи = await викликАРІ('отриматиВсіЛисти');
-    const контейнер = document.getElementById('список-листів');
+    const машини = await викликАРІ('отриматиМашиниПідрозділу', { підрозділ: назва });
     контейнер.innerHTML = '';
+    if (!машини.length) {
+      контейнер.innerHTML = '<div class="sidebar-hint">Немає машин у цьому підрозділі.</div>';
+      return;
+    }
+    машини.forEach(м => {
+      const картка = document.createElement('div');
+      картка.className = 'list-item';
+      картка.innerHTML = `<b>${м.держНомер}</b><br><small>${м.марка || ''}${м.закріпленийВодій ? ' · ' + м.закріпленийВодій : ''}</small>`;
+      картка.onclick = () => обратиМашину_(м, картка);
+      контейнер.appendChild(картка);
+    });
+  } catch (е) {
+    контейнер.innerHTML = '';
+    повідомлення('л-повідомлення', 'Помилка завантаження машин підрозділу: ' + е.message, false);
+  }
+}
+
+async function обратиМашину_(машина, картка) {
+  обранаМашинаНавігації = машина;
+  [...document.querySelectorAll('#sidebar-машини .list-item')].forEach(к => к.classList.remove('active'));
+  if (картка) картка.classList.add('active');
+  document.getElementById('sidebar-листи').style.display = 'block';
+  await оновитиСписокЛистівМашини_();
+}
+
+// Перечитує список листів ОБРАНОЇ в сайдбарі машини — викликається і після вибору картки,
+// і після будь-якого збереження/закриття, щоб статуси й підсвітка активного лишались точними.
+async function оновитиСписокЛистівМашини_() {
+  if (!обранаМашинаНавігації) return;
+  const контейнер = document.getElementById('список-листів-машини');
+  контейнер.innerHTML = 'Завантаження…';
+  try {
+    const листи = await викликАРІ('отриматиЛистиМашини', { держНомер: обранаМашинаНавігації.держНомер });
+    контейнер.innerHTML = '';
+    if (!листи.length) { контейнер.innerHTML = '<div class="sidebar-hint">Ще немає листів цієї машини.</div>'; return; }
     листи.forEach(л => {
+      const закритий = л.статус === 'Закритий';
       const елемент = document.createElement('div');
-      елемент.className = 'list-item' + (String(л.номер) === String(поточнийНомерЛиста) ? ' active' : '');
-      елемент.innerHTML = `<b>№${л.номер}</b><br><small>${л.держНомер || ''} — ${л.водій || ''}</small>`;
+      елемент.className = 'list-item' + (String(л.номер) === String(поточнийНомерЛиста) ? ' active' : '') + (закритий ? ' closed' : '');
+      const дата = л.дата ? new Date(л.дата).toLocaleDateString('uk-UA') : '';
+      елемент.innerHTML = `<b>№${л.номер}</b>${закритий ? ' 🔒' : ''}<br><small>${дата} — ${л.водій || ''}</small>`;
       елемент.onclick = () => вибратиЛист(л.номер);
       контейнер.appendChild(елемент);
     });
   } catch (е) {
-    повідомлення('л-повідомлення', 'Помилка завантаження списку листів: ' + е.message, false);
+    контейнер.innerHTML = '';
+    повідомлення('л-повідомлення', 'Помилка завантаження листів машини: ' + е.message, false);
+  }
+}
+
+// "+ Створити дорожній лист" з картки машини: чистить форму, підставляє машину/водія, і
+// підтягує з НАЙСВІЖІШОГО листа цієї машини одометр/дату/залишки ПММ (перенесення між листами).
+// Сам новий лист ще НЕ зберігається — впиши № документа і натисни "Зберегти внесені дані".
+async function створитиЛистЗМашини() {
+  if (!обранаМашинаНавігації) return;
+  document.querySelector('.tab[data-tab="стор1"]').click();
+  очиститиФорму();
+  поточнийНомерЛиста = null;
+  document.getElementById('л-номер').value = '';
+  document.getElementById('показ-номер').textContent = '';
+  document.getElementById('л-машина').value = обранаМашинаНавігації.держНомер;
+  оновитиПоказМашини();
+
+  повідомлення('л-повідомлення', 'Підтягую дані з попереднього листа цієї машини…', true);
+  try {
+    const дані = await викликАРІ('отриматиДаніДляНовогоЛистаМашини', { держНомер: обранаМашинаНавігації.держНомер });
+    if (дані.водій) document.getElementById('л-водій').value = дані.водій;
+    if (дані.вибуттяОдометр) document.getElementById('л-вибуттяодометр').value = дані.вибуттяОдометр;
+    if (дані.датаДокумента) document.getElementById('л-дата').value = форматДляInput(дані.датаДокумента).slice(0, 10);
+
+    (дані.пммРядки || []).forEach((з, i) => {
+      while (i >= К_ПММ_РЯДКІВ) додатиРядокПММ();
+      document.getElementById(`пмм-${i}-найменування`).value = з.найменування || '';
+      document.getElementById(`пмм-${i}-наявність`).value = з.наявність || '';
+      if (з.тип) {
+        const тр = document.getElementById('пмм-рядок-' + i);
+        тр.dataset.тип = з.тип;
+        тр.dataset.типДляНазви = з.найменування || '';
+        document.getElementById(`пмм-${i}-тип-мітка`).textContent = '(' + (ТИПИ_ПММ[з.тип] || з.тип) + ')';
+      }
+    });
+
+    повідомлення('л-повідомлення', 'Форму підготовлено — впиши № документа і перевір дані перед збереженням.', true);
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Не вдалось підтягнути дані попереднього листа: ' + е.message, false);
   }
 }
 
@@ -585,6 +738,7 @@ async function вибратиЛист(номер) {
     поточнийНомерЛиста = номер;
     очиститиФорму();
     заповнитиШапкуЗДаних(дані.шапка);
+    застосуватиСтатусЗакриття_(дані.шапка.статус === 'Закритий');
     // Підганяємо кількість рядків рівно під те, що реально збережено — інакше раніше видалені
     // (тепер уже порожні) рядки просто поверталися б назад при кожному завантаженні листа.
     обрізатиРядкиПоїздокДо_(Math.max((дані.поїздки || []).length, 1));
@@ -597,7 +751,7 @@ async function вибратиЛист(номер) {
       while (i >= К_ПММ_РЯДКІВ) додатиРядокПММ();
       заповнитиРядокПММЗДаних(i, з);
     });
-    await завантажитиСписокЛистів();
+    await оновитиСписокЛистівМашини_();
     await оновитиПідсумокСторінки2();
     document.getElementById('підсумок-стор1').innerHTML = '';
     повідомлення('л-повідомлення', 'Завантажено дорожній лист №' + номер, true);
@@ -753,6 +907,7 @@ async function оновитиПідсумокСторінки2() {
 }
 
 function очиститиФорму() {
+  застосуватиСтатусЗакриття_(false);
   document.getElementById('підсумок-стор1').innerHTML = '';
   document.getElementById('підсумок-стор2').innerHTML = '';
   for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
@@ -778,6 +933,33 @@ function очиститиФорму() {
     delete підсумкиПоїздок[i];
     const кнопка = document.getElementById(`поїздка-${i}-кнопка-розрахувати`);
     if (кнопка) { кнопка.disabled = false; кнопка.textContent = '🧮'; }
+  }
+}
+
+// ==================== ЗАКРИТТЯ ДОРОЖНЬОГО ЛИСТА ====================
+// Вотермарка на обох сторінках + блокування полів від редагування. Статус живе в тому самому
+// "Статус" (Відкритий/Закритий), що вже був у моделі даних — тут лише вмикається UI для нього.
+function застосуватиСтатусЗакриття_(закритий) {
+  document.querySelectorAll('.paper').forEach(п => п.classList.toggle('closed', закритий));
+  document.querySelectorAll('.paper input, .paper select, .paper textarea').forEach(el => { el.disabled = закритий; });
+  const кнопка = document.getElementById('btn-закрити-лист');
+  if (кнопка) кнопка.textContent = закритий ? 'Відкрити дорожній лист' : 'Закрити дорожній лист';
+}
+
+async function перемкнутиЗакриттяЛиста_() {
+  if (!поточнийНомерЛиста) { повідомлення('л-повідомлення', 'Спочатку створи або обери дорожній лист.', false); return; }
+  const кнопка = document.getElementById('btn-закрити-лист');
+  const закриваємо = !кнопка.textContent.startsWith('Відкрити');
+  кнопка.disabled = true;
+  try {
+    const результат = await викликАРІ('закритиЛист', { номерЛиста: поточнийНомерЛиста, закрито: закриваємо });
+    застосуватиСтатусЗакриття_(результат.статус === 'Закритий');
+    повідомлення('л-повідомлення', результат.статус === 'Закритий' ? 'Дорожній лист закрито.' : 'Дорожній лист знову відкрито для редагування.', true);
+    await оновитиСписокЛистівМашини_();
+  } catch (е) {
+    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
+  } finally {
+    кнопка.disabled = false;
   }
 }
 
@@ -824,35 +1006,8 @@ function зібратиДаніШапки() {
   };
 }
 
-async function створитиНовийЛист() {
-  const номер = document.getElementById('л-номер').value;
-  const держНомер = document.getElementById('л-машина').value;
-  const водій = document.getElementById('л-водій').value;
-  if (!номер) { повідомлення('л-повідомлення', 'Впиши № документа на Сторінці 1, перш ніж створювати лист.', false); return; }
-  if (!держНомер || !водій) { повідомлення('л-повідомлення', 'Обери машину і водія на Сторінці 1.', false); return; }
-
-  const цеТойСамийЛист = поточнийНомерЛиста && String(поточнийНомерЛиста) === String(номер);
-  const дані = зібратиДаніШапки();
-  const кнопка = document.getElementById('btn-створити-лист');
-  кнопка.disabled = true;
-  try {
-    await викликАРІ('створитиДорожнійЛист', { дані });
-    поточнийНомерЛиста = номер;
-    if (!цеТойСамийЛист) {
-      // це справді новий лист (інший номер) — очищаємо таблиці під чистий старт
-      очиститиФорму();
-      document.getElementById('л-номер').value = номер;
-      document.getElementById('показ-номер').textContent = номер;
-    }
-    await завантажитиСписокЛистів();
-    повідомлення('л-повідомлення',
-      цеТойСамийЛист ? 'Дорожній лист №' + номер + ' оновлено.' : 'Дорожній лист №' + номер + ' створено. Тепер внось поїздки і ПММ.', true);
-  } catch (е) {
-    повідомлення('л-повідомлення', 'Помилка: ' + е.message, false);
-  } finally {
-    кнопка.disabled = false;
-  }
-}
+// (Стара окрема кнопка "Створити дорожній лист" пішла — тепер форма готується з картки машини
+// в сайдбарі (створитиЛистЗМашини), а зберігає її "Зберегти внесені дані", як і решту правок.)
 
 document.addEventListener('DOMContentLoaded', () => {
   const поле = document.getElementById('л-номер');
@@ -1010,7 +1165,7 @@ async function зберегтиВсіДані() {
       }
     }
 
-    await завантажитиСписокЛистів();
+    await оновитиСписокЛистівМашини_();
     await оновитиПідсумокСторінки2();
     const підсумок = `Збережено: шапка листа, поїздок — ${поїздокЗбережено}, записів ПММ — ${пммЗбережено}.`;
     if (помилки.length) {
