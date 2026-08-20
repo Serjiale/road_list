@@ -48,7 +48,10 @@
   /* Тулбар "Підрозділи" — окремий "таб", але з випадаючим меню при наведенні (лише в Адміна;
      в учасника це просто клікабельна назва його єдиного підрозділу, без меню). */
   .dept-tab{ position:relative; }
-  .dept-dropdown{ display:none; position:absolute; top:100%; left:0; margin-top:6px;
+  /* padding-top (не margin-top) навмисно — щоб ховерна зона впритул прилягала до таба без
+     розриву, інакше при повільному наведенні курсор потрапляє в порожній проміжок і меню
+     встигає зникнути (display:none) ще до того, як курсор дістанеться самого меню. */
+  .dept-dropdown{ display:none; position:absolute; top:100%; left:0; padding-top:6px;
     background:var(--panel); border:1px solid var(--border); border-radius:6px; min-width:180px;
     z-index:30; box-shadow:0 10px 30px rgba(0,0,0,.5); overflow:hidden; }
   .dept-tab:hover .dept-dropdown{ display:block; }
@@ -434,9 +437,13 @@ document.addEventListener('keydown', e => {
   }
 });
 
-document.querySelectorAll('.tab').forEach(t => {
+// :not(.dept-tab) — таб "Підрозділи" не є справжньою сторінкою (немає власної панелі), лише
+// показує ховер-меню/мітку підрозділу; раніше цей самий обробник спрацьовував і на ньому (клік
+// бульбашився від пункту випадаючого меню), намагався активувати неіснуючу "панель-undefined"
+// і в результаті ховав обидві сторінки — саме звідси був "перехід у пусте поле" при виборі підрозділу.
+document.querySelectorAll('.tab:not(.dept-tab)').forEach(t => {
   t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab:not(.dept-tab)').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('панель-' + t.dataset.tab).classList.add('active');
@@ -635,6 +642,7 @@ function налаштуватиТулбарПідрозділів_() {
 async function обратиПідрозділ_(назва) {
   обранийПідрозділНавігації = назва;
   обранаМашинаНавігації = null;
+  if (поточнаРоль === 'Адмін') document.getElementById('підрозділ-мітка').textContent = назва + ' ▾';
   document.getElementById('sidebar-підказка').style.display = 'none';
   document.getElementById('sidebar-body').style.display = 'flex';
   document.getElementById('sidebar-листи').style.display = 'none';
