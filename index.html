@@ -89,6 +89,12 @@
   .no-border{ border:none !important; }
   .readonly-cell{ background:#f0ede4; text-align:center; }
 
+  /* Підсумок за видами ПММ (після "Розрахунок ПММ") — подвійна лінія відокремлює його від
+     самих записів, як "разом" у бухгалтерському документі. */
+  .пмм-підсумок-заголовок td{ border:none !important; border-top:4px double #333 !important;
+    padding-top:7px; font-size:11px; font-weight:bold; color:#555; text-align:left; }
+  .пмм-підсумок-рядок td{ background:#eae5d8; }
+
   .del-col{ border:none !important; width:16px; padding:0 !important; text-align:center; cursor:pointer;
     color:transparent; font-weight:bold; font-size:14px; user-select:none; }
   tr:hover .del-col{ color:#ccc; }
@@ -300,11 +306,8 @@
           <th>Витрачено</th><th>Належить за нормою</th><th>Економія</th><th>Перевитрата</th><th class="del-col no-border"></th>
         </tr>
         <tbody id="таблиця-пмм"></tbody>
+        <tfoot id="пмм-підсумок"></tfoot>
       </table>
-      <div style="margin-top:10px;">
-        <button class="secondary" onclick="додатиРядокПММ()">+ Додати рядок</button>
-        <button class="secondary" onclick="очиститиРозрахункиПММ()">Очистити дані розрахунків</button>
-      </div>
     </div>
   </div>
 
@@ -364,7 +367,9 @@
   <div class="toolbar">
     <button id="btn-зберегти-все" onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
     <button id="btn-розрахунок-пмм" onclick="розрахунокПММ()">Розрахунок ПММ</button>
-    <button id="btn-закрити-лист" class="secondary" onclick="перемкнутиЗакриттяЛиста_()">Закрити дорожній лист</button>
+    <button id="btn-додати-пмм-рядок" class="secondary" onclick="додатиРядокПММ()">+ Додати рядок</button>
+    <button id="btn-очистити-розрахунки-пмм" class="secondary" onclick="очиститиРозрахункиПММ()">Очистити дані розрахунків</button>
+    <button id="btn-закрити-лист" class="secondary" style="margin-left:auto;" onclick="перемкнутиЗакриттяЛиста_()">Закрити дорожній лист</button>
   </div>
 
   <!-- ==================== EXCEL ==================== -->
@@ -863,6 +868,7 @@ async function вибратиЛист(номер) {
       while (i >= К_ПММ_РЯДКІВ) додатиРядокПММ();
       заповнитиРядокПММЗДаних(i, з);
     });
+    оновитиПідсумокПоТипамПММ_();
     await оновитиСписокЛистівМашини_();
     await оновитиПідсумокСторінки2();
     document.getElementById('підсумок-стор1').innerHTML = '';
@@ -1043,6 +1049,7 @@ function очиститиФорму() {
   застосуватиСтатусЗакриття_(false);
   document.getElementById('підсумок-стор1').innerHTML = '';
   document.getElementById('підсумок-стор2').innerHTML = '';
+  document.getElementById('пмм-підсумок').innerHTML = '';
   for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
     const тр = document.getElementById('пмм-рядок-' + i);
     ['найменування','код','наявність','отримано','належить','економія','перевитрата'].forEach(п => document.getElementById(`пмм-${i}-${п}`).value = '');
@@ -1080,7 +1087,7 @@ function застосуватиСтатусЗакриття_(закритий) {
   // "Зберегти внесені дані" й "Розрахунок ПММ" стоять у тулбарі ОКРЕМО від .paper — блокуємо
   // їх явно. "Закрити/Відкрити дорожній лист" лишається активною завжди, інакше не було б як
   // знову відкрити лист.
-  ['btn-зберегти-все', 'btn-розрахунок-пмм'].forEach(id => {
+  ['btn-зберегти-все', 'btn-розрахунок-пмм', 'btn-додати-пмм-рядок', 'btn-очистити-розрахунки-пмм'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = закритий;
   });
@@ -1328,12 +1335,56 @@ async function очиститиРозрахункиПММ() {
     document.getElementById(`пмм-${i}-стоянка`).textContent = '';
     document.getElementById(`пмм-${i}-витрачено`).textContent = '';
   }
+  document.getElementById('пмм-підсумок').innerHTML = '';
   if (поточнийНомерЛиста) {
     try {
       await викликАРІ('очиститиРозрахункиПММЛиста', { номерЛиста: поточнийНомерЛиста });
     } catch (е) { /* не критично для UI, дані на екрані вже очищено */ }
   }
   повідомлення('л-повідомлення', 'Розрахунки ПММ очищено. Можна натиснути "Розрахунок ПММ" ще раз.', true);
+}
+
+// ==================== ПММ: ПІДСУМОК ЗА ВИДАМИ (після "Розрахунок ПММ") ====================
+// Кілька рядків з ОДНАКОВОЮ назвою (напр. частина лишилась з минулого рейсу, частину отримали
+// вже в цьому) об'єднуються в один підсумковий рядок: сума "Наявність на стоянці" + сума
+// "Витрачено" по цій назві. Рахується суто з поточного стану екрана (спрацьовує і одразу після
+// розрахунку, і при завантаженні вже порахованого раніше листа) — нічого окремо не зберігає.
+function оновитиПідсумокПоТипамПММ_() {
+  const підсумокТіло = document.getElementById('пмм-підсумок');
+  підсумокТіло.innerHTML = '';
+
+  const заНазвою = {}; // назва -> {стоянка, витрачено}
+  let порядок = [];
+  for (let i = 0; i < К_ПММ_РЯДКІВ; i++) {
+    const назва = document.getElementById(`пмм-${i}-найменування`).value;
+    if (!назва) continue;
+    const стоянка = parseFloat(document.getElementById(`пмм-${i}-стоянка`).textContent) || 0;
+    const витрачено = parseFloat(document.getElementById(`пмм-${i}-витрачено`).textContent) || 0;
+    if (!заНазвою[назва]) { заНазвою[назва] = { стоянка: 0, витрачено: 0 }; порядок.push(назва); }
+    заНазвою[назва].стоянка += стоянка;
+    заНазвою[назва].витрачено += витрачено;
+  }
+
+  порядок = порядок.filter(назва => заНазвою[назва].стоянка > 0 || заНазвою[назва].витрачено > 0);
+  if (!порядок.length) return;
+
+  const заголовок = document.createElement('tr');
+  заголовок.className = 'пмм-підсумок-заголовок';
+  заголовок.innerHTML = '<td colspan="10">Підсумок за видами ПММ</td>';
+  підсумокТіло.appendChild(заголовок);
+
+  порядок.forEach(назва => {
+    const { стоянка, витрачено } = заНазвою[назва];
+    const тр = document.createElement('tr');
+    тр.className = 'пмм-підсумок-рядок';
+    тр.innerHTML = `
+      <td class="bold">${назва}</td>
+      <td></td><td></td><td></td>
+      <td class="center">${стоянка > 0 ? стоянка.toFixed(1) : ''}</td>
+      <td class="center">${витрачено > 0 ? витрачено.toFixed(1) : ''}</td>
+      <td></td><td></td><td></td><td></td>`;
+    підсумокТіло.appendChild(тр);
+  });
 }
 
 async function розрахунокПММ() {
@@ -1369,6 +1420,7 @@ async function розрахунокПММ() {
       document.getElementById(`пмм-${i}-витрачено`).textContent = р.витрачено.toFixed(1);
       document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці > 0 ? р.наявністьНаСтоянці.toFixed(1) : '';
     });
+    оновитиПідсумокПоТипамПММ_();
     оновитиПідсумокСторінки1(результат.підсумокКм);
     await підставитиКінцевіПоказникиЗПоїздок_();
     повідомлення('л-повідомлення',
