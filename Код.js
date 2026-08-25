@@ -8,8 +8,12 @@ const АРКУШІ = {
   ПОЇЗДКИ: 'Поїздки',
   ПММ_ЗАПИСИ: 'ПММ Записи',
   ПІДРОЗДІЛИ: 'Підрозділи',
-  КОРИСТУВАЧІ: 'Користувачі'
+  КОРИСТУВАЧІ: 'Користувачі',
+  СЕСІЇ: 'Сесії'
 };
+
+// Скільки днів триває сесія без повторного входу через Google (див. створитиСесію_/перевіритиСесію_).
+const ТРИВАЛІСТЬ_СЕСІЇ_ДНІВ = 365;
 
 const КОЕФІЦІЄНТИ_ДІЛЯНОК = {
   'Траса': 0.85,
@@ -1356,7 +1360,7 @@ function doPost(e) {
   let тілоВідповіді;
   try {
     const тіло = JSON.parse(e.postData.contents);
-    const email = перевіритиGoogleТокен_(тіло.токен);
+    const { email, сесія } = встановитиСесію_(тіло);
     забезпечитиСтруктуруПідрозділів_();
     const користувач = перевіритиКористувача_(email);
 
@@ -1391,12 +1395,52 @@ function doPost(e) {
     if (!дії[тіло.дія]) throw new Error('Невідома дія: ' + тіло.дія);
     const результат = дії[тіло.дія](тіло);
 
-    тілоВідповіді = { успіх: true, дані: результат, email: email };
+    тілоВідповіді = { успіх: true, дані: результат, email: email, сесія: сесія };
   } catch (помилка) {
     тілоВідповіді = { успіх: false, помилка: помилка.message };
   }
   return ContentService.createTextOutput(JSON.stringify(тілоВідповіді))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Визначає email запиту: якщо є дійсна власна сесія (тіло.сесія) — довіряємо їй без звернення
+// до Google (так не доводиться підтверджувати вхід через Google щоразу після оновлення
+// сторінки). Якщо сесії немає або вона протермінована — перевіряємо свіжий Google-токен і
+// одразу видаємо нову сесію на ТРИВАЛІСТЬ_СЕСІЇ_ДНІВ днів. Повертає { email, сесія } — фронтенд
+// зберігає сесія в localStorage і надсилає її замість токена в наступних запитах.
+function встановитиСесію_(тіло) {
+  if (тіло.сесія) {
+    const email = перевіритиСесію_(тіло.сесія);
+    if (email) return { email: email, сесія: тіло.сесія };
+  }
+  const email = перевіритиGoogleТокен_(тіло.токен);
+  return { email: email, сесія: створитиСесію_(email) };
+}
+
+function перевіритиСесію_(токенСесії) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const аркуш = ss.getSheetByName(АРКУШІ.СЕСІЇ);
+  if (!аркуш || аркуш.getLastRow() < 2) return null;
+  const дані = аркуш.getRange(2, 1, аркуш.getLastRow() - 1, 3).getValues();
+  const рядок = дані.find(р => String(р[0]) === String(токенСесії));
+  if (!рядок) return null;
+  const дійснаДо = new Date(рядок[2]);
+  if (isNaN(дійснаДо.getTime()) || дійснаДо.getTime() < Date.now()) return null;
+  return рядок[1] || null;
+}
+
+function створитиСесію_(email) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let аркуш = ss.getSheetByName(АРКУШІ.СЕСІЇ);
+  if (!аркуш) {
+    аркуш = ss.insertSheet(АРКУШІ.СЕСІЇ);
+    аркуш.getRange(1, 1, 1, 3).setValues([['Токен', 'Email', 'Дійсна до']])
+      .setFontWeight('bold').setBackground('#4a86c8').setFontColor('#ffffff');
+    аркуш.setFrozenRows(1);
+  }
+  const токен = Utilities.getUuid();
+  аркуш.appendRow([токен, email, new Date(Date.now() + ТРИВАЛІСТЬ_СЕСІЇ_ДНІВ * 24 * 60 * 60 * 1000)]);
+  return токен;
 }
 
 function перевіритиGoogleТокен_(токен) {

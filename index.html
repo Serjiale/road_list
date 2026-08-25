@@ -395,18 +395,25 @@ let К_ПОЇЗДКИ_РЯДКІВ = 5;
 
 let googleToken = null;
 let обраМашина = null;
+// Власна сесія (незалежна від короткоживого Google-токена) — бекенд видає її після першого
+// реального входу через Google і продовжує визнавати ТРИВАЛІСТЬ_СЕСІЇ_ДНІВ (365) днів, тож
+// оновлення сторінки чи повторний заїзд у застосунок не вимагає щоразу підтверджувати вхід.
+let сесіяТокен = localStorage.getItem('дл_сесія') || null;
+let поточнийEmail = null;
 
-function handleCredentialResponse(response) {
-  googleToken = response.credential;
-  const payload = JSON.parse(atob(response.credential.split('.')[1]));
-  document.getElementById('хто-увійшов').textContent = 'Увійшли як: ' + payload.email;
+function показатиОсновну_() {
   document.getElementById('вхід').style.display = 'none';
   document.getElementById('основна').style.display = 'block';
   побудуватиТаблиці();
   заповнитиДатуСелекти_('л-дійснийдо');
   заповнитиДатуСелекти_('л-технікдата');
   заповнитиДатуСелекти_('л-ктпдата');
-  завантажитиДовідники();
+}
+
+function handleCredentialResponse(response) {
+  googleToken = response.credential;
+  показатиОсновну_();
+  завантажитиДовідники().catch(() => { /* повідомлення вже показано всередині */ });
 }
 
 const МІСЯЦІ_РОД = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
@@ -430,6 +437,16 @@ function заповнитиДатуСелекти_(префікс) {
 window.addEventListener('load', () => {
   google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: handleCredentialResponse });
   google.accounts.id.renderButton(document.getElementById('googleBtn'), { theme: 'filled_black', size: 'large', text: 'signin_with' });
+
+  // Є збережена сесія з попереднього входу — пробуємо увійти нею одразу, без екрана Google.
+  // Показуємо основну форму лише ПІСЛЯ підтвердження від бекенду, щоб не блимнути порожньою
+  // формою, якщо сесія виявиться протермінованою (тоді просто лишаємось на звичайному вході).
+  if (сесіяТокен) {
+    завантажитиДовідники().then(показатиОсновну_).catch(() => {
+      сесіяТокен = null;
+      localStorage.removeItem('дл_сесія');
+    });
+  }
 });
 
 // Enter у звичайному полі поза формою сам по собі не знімає фокус — а деякі поля (напр.
@@ -457,7 +474,7 @@ document.querySelectorAll('.tab:not(.dept-tab)').forEach(t => {
 });
 
 async function викликАРІ(дія, параметри) {
-  const тіло = Object.assign({ дія: дія, токен: googleToken }, параметри || {});
+  const тіло = Object.assign({ дія: дія, токен: googleToken, сесія: сесіяТокен }, параметри || {});
   const відповідь = await fetch(CONFIG.APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -465,6 +482,14 @@ async function викликАРІ(дія, параметри) {
   });
   const результат = await відповідь.json();
   if (!результат.успіх) throw new Error(результат.помилка);
+  // Бекенд або підтверджує чинну сесію (те саме значення), або видає нову (напр. одразу після
+  // Google-входу) — у другому випадку зберігаємо її, щоб наступні відкриття сторінки вже не
+  // питали Google взагалі.
+  if (результат.сесія && результат.сесія !== сесіяТокен) {
+    сесіяТокен = результат.сесія;
+    localStorage.setItem('дл_сесія', сесіяТокен);
+  }
+  if (результат.email) поточнийEmail = результат.email;
   return результат.дані;
 }
 
@@ -567,6 +592,7 @@ let усіВодіїДовідник = []; // [{піб, підрозділ}] —
 async function завантажитиДовідники() {
   try {
     const д = await викликАРІ('отриматиДовідники');
+    if (поточнийEmail) document.getElementById('хто-увійшов').textContent = 'Увійшли як: ' + поточнийEmail;
     поточнаРоль = д.роль;
     поточнийПідрозділ = д.підрозділ;
     налаштуватиТулбарПідрозділів_();
@@ -584,6 +610,7 @@ async function завантажитиДовідники() {
     селМашина.addEventListener('change', оновитиПоказМашини);
   } catch (е) {
     повідомлення('л-повідомлення', 'Помилка завантаження довідників (машини/водії): ' + е.message, false);
+    throw е;
   }
 }
 
