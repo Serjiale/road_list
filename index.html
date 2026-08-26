@@ -108,6 +108,14 @@
   .route-cell input{ flex:1; min-width:0; }
 
   .toolbar{ max-width:1500px; margin:0 auto 14px; display:flex; gap:10px; flex-wrap:wrap; }
+
+  /* Поки триває будь-яка дія, що йде в бекенд (body.дія-триває), тулбар/сайдбар/аркуш недоступні
+     для кліків — без цього нетерплячий подвійний клік (напр. на інший лист у сайдбарі, поки
+     попередній ще завантажується) міг запустити паралельні запити й зрідка перезаписати форму
+     застарілою відповіддю, що прийшла пізніше. */
+  body.дія-триває .toolbar, body.дія-триває .sidebar, body.дія-триває .paper{
+    pointer-events:none; opacity:.55; transition:opacity .15s;
+  }
   button{ padding:9px 16px; background:var(--accent); color:#1a1310; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; transition:background-color .12s, filter .12s; }
   button:hover{ background:var(--accent2); }
   button.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--border); }
@@ -182,7 +190,7 @@
       <div id="sidebar-body" class="sidebar-body" style="display:none;">
         <div class="sidebar-col" id="sidebar-машини"></div>
         <div class="sidebar-col sidebar-col-лісти" id="sidebar-листи" style="display:none;">
-          <button id="btn-створити-лист" class="secondary" onclick="створитиЛистЗМашини()">+ Створити дорожній лист</button>
+          <button id="btn-створити-лист" class="secondary" onclick="зБлокуванням_(створитиЛистЗМашини)">+ Створити дорожній лист</button>
           <div id="список-листів-машини"></div>
         </div>
       </div>
@@ -365,11 +373,11 @@
 
   <!-- ==================== ШАПКА-ДІЇ ==================== -->
   <div class="toolbar">
-    <button id="btn-зберегти-все" onclick="зберегтиВсіДані()">Зберегти внесені дані</button>
-    <button id="btn-розрахунок-пмм" onclick="розрахунокПММ()">Розрахунок ПММ</button>
+    <button id="btn-зберегти-все" onclick="зБлокуванням_(зберегтиВсіДані)">Зберегти внесені дані</button>
+    <button id="btn-розрахунок-пмм" onclick="зБлокуванням_(розрахунокПММ)">Розрахунок ПММ</button>
     <button id="btn-додати-пмм-рядок" class="secondary" onclick="додатиРядокПММ()">+ Додати рядок</button>
-    <button id="btn-очистити-розрахунки-пмм" class="secondary" onclick="очиститиРозрахункиПММ()">Очистити дані розрахунків</button>
-    <button id="btn-закрити-лист" class="secondary" style="margin-left:auto;" onclick="перемкнутиЗакриттяЛиста_()">Закрити дорожній лист</button>
+    <button id="btn-очистити-розрахунки-пмм" class="secondary" onclick="зБлокуванням_(очиститиРозрахункиПММ)">Очистити дані розрахунків</button>
+    <button id="btn-закрити-лист" class="secondary" style="margin-left:auto;" onclick="зБлокуванням_(перемкнутиЗакриттяЛиста_)">Закрити дорожній лист</button>
   </div>
 
   <!-- ==================== EXCEL ==================== -->
@@ -478,6 +486,31 @@ document.querySelectorAll('.tab:not(.dept-tab)').forEach(t => {
   });
 });
 
+// ==================== ГЛОБАЛЬНЕ БЛОКУВАННЯ ДІЙ (щоб не запускати кілька дій одночасно) ====================
+// Кожна дія, що йде в бекенд, сама собі блокувала тільки СВОЮ кнопку — але клік по ІНШІЙ кнопці
+// чи іншому листу в сайдбарі, поки перша дія ще виконується, спокійно запускав другий запит
+// паралельно. Apps Script не блискавичний (кожен виклик має свою фіксовану "вартість входу"), і
+// такі накладені один на одного запити — реальне джерело як зайвого навантаження, так і зрідка
+// застарілих відповідей, що перезаписують форму. Тепер під час будь-якої такої дії недоступні
+// геть усі кнопки одразу (тулбар/сайдбар/аркуш підсвічуються напівпрозорими), а не тільки та,
+// що натиснута.
+let бекендЗайнятий = false;
+
+async function зБлокуванням_(fn) {
+  if (бекендЗайнятий) {
+    повідомлення('л-повідомлення', 'Зачекай, попередня дія ще виконується…', false);
+    return;
+  }
+  бекендЗайнятий = true;
+  document.body.classList.add('дія-триває');
+  try {
+    await fn();
+  } finally {
+    бекендЗайнятий = false;
+    document.body.classList.remove('дія-триває');
+  }
+}
+
 async function викликАРІ(дія, параметри) {
   const тіло = Object.assign({ дія: дія, токен: googleToken, сесія: сесіяТокен }, параметри || {});
   const відповідь = await fetch(CONFIG.APPS_SCRIPT_URL, {
@@ -527,7 +560,7 @@ function створитиРядокПММ_(i) {
     <td><input id="пмм-${i}-належить" type="number" step="0.1" class="center"></td>
     <td><input id="пмм-${i}-економія" type="number" step="0.1" class="center"></td>
     <td><input id="пмм-${i}-перевитрата" type="number" step="0.1" class="center"></td>
-    <td class="del-col" onclick="видалитиРядокПММ(${i})">✕</td>`;
+    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПММ(${i}))">✕</td>`;
   пммТіло.appendChild(тр);
   document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
 }
@@ -540,7 +573,7 @@ function створитиРядокПоїздки_(i) {
     <td><div class="route-cell">
       <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
       <input id="поїздка-${i}-маршрут" placeholder='Введи населений пункт через "/"'>
-      <button id="поїздка-${i}-кнопка-розрахувати" class="calc-btn" onclick="розрахуватиРядок(${i})" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
+      <button id="поїздка-${i}-кнопка-розрахувати" class="calc-btn" onclick="зБлокуванням_(() => розрахуватиРядок(${i}))" title="Розрахувати маршрут (кілометраж і ділянки)">🧮</button>
       <button class="calc-btn" onclick="показатиМаршрутНаКарті(${i})" title="Показати маршрут на карті для перевірки">🗺️</button>
       <button class="calc-btn" onclick="показатиКоригуванняМаршруту(${i})" title="Скоригувати маршрут вручну (додати проміжну точку)">🛠️</button></div>
       <label style="font-size:9px; color:#666; display:block; margin-top:2px; font-weight:normal;">
@@ -560,9 +593,9 @@ function створитиРядокПоїздки_(i) {
     <td><input id="поїздка-${i}-вантаж" class="center"></td>
     <td><input id="поїздка-${i}-кількість" type="number" step="0.1" class="center"></td>
     <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
-    <td class="del-col" onclick="видалитиРядокПоїздки(${i})">✕</td>`;
+    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПоїздки(${i}))">✕</td>`;
   поїздкиТіло.appendChild(тр);
-  document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => обробитиРучнуЗмінуКм(i));
+  document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => зБлокуванням_(() => обробитиРучнуЗмінуКм(i)));
 }
 
 function додатиРядокПММ() {
@@ -700,13 +733,13 @@ function налаштуватиТулбарПідрозділів_() {
         const пункт = document.createElement('div');
         пункт.className = 'dept-dropdown-item';
         пункт.textContent = назва;
-        пункт.onclick = () => обратиПідрозділ_(назва);
+        пункт.onclick = () => зБлокуванням_(() => обратиПідрозділ_(назва));
         дропдаун.appendChild(пункт);
       });
     }).catch(() => { /* не критично для решти форми */ });
   } else {
     мітка.textContent = поточнийПідрозділ || '(підрозділ не вказано)';
-    таб.onclick = () => обратиПідрозділ_(поточнийПідрозділ);
+    таб.onclick = () => зБлокуванням_(() => обратиПідрозділ_(поточнийПідрозділ));
   }
 }
 
@@ -747,7 +780,7 @@ function рендерМашиниПідрозділу_(машини, конте�
     const картка = document.createElement('div');
     картка.className = 'list-item';
     картка.innerHTML = `<b>${м.держНомер}</b><br><small>${м.марка || ''}${м.закріпленийВодій ? ' · ' + м.закріпленийВодій : ''}</small>`;
-    картка.onclick = () => обратиМашину_(м, картка);
+    картка.onclick = () => зБлокуванням_(() => обратиМашину_(м, картка));
     контейнер.appendChild(картка);
   });
 }
@@ -794,7 +827,7 @@ function рендерСписокЛистівМашини_(листи, конт�
     елемент.className = 'list-item' + (String(л.номер) === String(поточнийНомерЛиста) ? ' active' : '') + (закритий ? ' closed' : '');
     const дата = л.дата ? new Date(л.дата).toLocaleDateString('uk-UA') : '';
     елемент.innerHTML = `<b>№${л.номер}</b>${закритий ? ' 🔒' : ''}<br><small>${дата} — ${л.водій || ''}</small>`;
-    елемент.onclick = () => вибратиЛист(л.номер);
+    елемент.onclick = () => зБлокуванням_(() => вибратиЛист(л.номер));
     контейнер.appendChild(елемент);
   });
 }
