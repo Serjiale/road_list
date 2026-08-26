@@ -100,6 +100,11 @@
   tr:hover .del-col{ color:#ccc; }
   .del-col:hover{ color:var(--danger) !important; }
 
+  .add-col{ border:none !important; width:16px; padding:0 !important; text-align:center; cursor:pointer;
+    color:transparent; font-weight:bold; font-size:14px; user-select:none; }
+  tr:hover .add-col{ color:#ccc; }
+  .add-col:hover{ color:var(--accent) !important; }
+
   .calc-btn{ background:var(--accent); color:#1a1310; border:none; border-radius:3px; padding:3px 6px;
     font-size:11px; cursor:pointer; white-space:nowrap; margin-left:1px; transition:background-color .12s; }
   .calc-btn:hover{ background:var(--accent2); }
@@ -304,11 +309,12 @@
       <div class="bold" style="margin-top:6px; font-size:11px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
       <table>
         <colgroup>
-          <col style="width:18.56%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
+          <col style="width:1.5%"><col style="width:17.06%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
           <col style="width:12.42%"><col style="width:9.55%"><col style="width:9.55%"><col style="width:8.60%">
           <col style="width:9.24%"><col style="width:1.5%">
         </colgroup>
         <tr>
+          <th class="add-col no-border"></th>
           <th>Найменування пального та мастильних матеріалів</th><th>Код номенклатури</th>
           <th>Наявність Перед виїздом</th><th>Отримано</th><th>Наявність під час постановки на стоянку</th>
           <th>Витрачено</th><th>Належить за нормою</th><th>Економія</th><th>Перевитрата</th><th class="del-col no-border"></th>
@@ -331,12 +337,13 @@
       </table>
       <table>
         <colgroup>
-          <col style="width:25.12%"><col style="width:6.44%"><col style="width:6.44%">
+          <col style="width:1.5%"><col style="width:23.62%"><col style="width:6.44%"><col style="width:6.44%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
           <col style="width:14.47%"><col style="width:1.5%">
         </colgroup>
         <tr>
+          <th rowspan="3" class="add-col no-border"></th>
           <th rowspan="3">Маршрут руху (звідки, куди)</th>
           <th colspan="2">Дата і час (години, хвилини)</th>
           <th colspan="5">Пройдено кілометрів</th>
@@ -354,13 +361,10 @@
         </tr>
         <tr><th>з причепом</th><th>на буксирі (на плаву)</th></tr>
         <tr>
-          <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th></th>
+          <th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th></th>
         </tr>
         <tbody id="таблиця-поїздки"></tbody>
       </table>
-      <div style="margin:10px 0;">
-        <button class="secondary" onclick="додатиРядокПоїздки()">+ Додати рядок</button>
-      </div>
 
       <table class="no-border" style="margin-top:10px;">
         <tr class="no-border"><td class="no-border">Водій (механік-водій) ______________________ <span class="label-sm" style="display:inline;">(військове звання, підпис, прізвище, ініціали)</span></td></tr>
@@ -375,7 +379,6 @@
   <div class="toolbar">
     <button id="btn-зберегти-все" onclick="зБлокуванням_(зберегтиВсіДані)">Зберегти внесені дані</button>
     <button id="btn-розрахунок-пмм" onclick="зБлокуванням_(розрахунокПММ)">Розрахунок ПММ</button>
-    <button id="btn-додати-пмм-рядок" class="secondary" onclick="додатиРядокПММ()">+ Додати рядок</button>
     <button id="btn-очистити-розрахунки-пмм" class="secondary" onclick="зБлокуванням_(очиститиРозрахункиПММ)">Очистити дані розрахунків</button>
     <button id="btn-закрити-лист" class="secondary" style="margin-left:auto;" onclick="зБлокуванням_(перемкнутиЗакриттяЛиста_)">Закрити дорожній лист</button>
   </div>
@@ -550,6 +553,7 @@ function створитиРядокПММ_(i) {
   const тр = document.createElement('tr');
   тр.id = 'пмм-рядок-' + i;
   тр.innerHTML = `
+    <td class="add-col" onclick="додатиРядокПММПісля_(${i})" title="Додати порожній рядок під цим">+</td>
     <td><input id="пмм-${i}-найменування" placeholder="Введи назву і вибери тип ПММ">
       <small id="пмм-${i}-тип-мітка" style="color:#888; display:block; font-size:9px;"></small></td>
     <td><input id="пмм-${i}-код"></td>
@@ -560,7 +564,7 @@ function створитиРядокПММ_(i) {
     <td><input id="пмм-${i}-належить" type="number" step="0.1" class="center"></td>
     <td><input id="пмм-${i}-економія" type="number" step="0.1" class="center"></td>
     <td><input id="пмм-${i}-перевитрата" type="number" step="0.1" class="center"></td>
-    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПММ(${i}))">✕</td>`;
+    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПММ(${i}))" title="Видалити цей рядок">✕</td>`;
   пммТіло.appendChild(тр);
   document.getElementById(`пмм-${i}-найменування`).addEventListener('blur', () => обробитиНайменуванняПММ(i));
 }
@@ -570,6 +574,7 @@ function створитиРядокПоїздки_(i) {
   const тр = document.createElement('tr');
   тр.id = 'поїздка-рядок-' + i;
   тр.innerHTML = `
+    <td class="add-col" onclick="додатиРядокПоїздкиПісля_(${i})" title="Додати порожній рядок під цим">+</td>
     <td><div class="route-cell">
       <button class="calc-btn" onclick="змінитиТочкиМаршруту(${i})" title="Змінити точки маршруту на карті">📍</button>
       <input id="поїздка-${i}-маршрут" placeholder='Введи населений пункт через "/"'>
@@ -593,7 +598,7 @@ function створитиРядокПоїздки_(i) {
     <td><input id="поїздка-${i}-вантаж" class="center"></td>
     <td><input id="поїздка-${i}-кількість" type="number" step="0.1" class="center"></td>
     <td id="поїздка-${i}-спідометр" class="readonly-cell"></td>
-    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПоїздки(${i}))">✕</td>`;
+    <td class="del-col" onclick="зБлокуванням_(() => видалитиРядокПоїздки(${i}))" title="Видалити цей рядок">✕</td>`;
   поїздкиТіло.appendChild(тр);
   document.getElementById(`поїздка-${i}-усього`).addEventListener('blur', () => зБлокуванням_(() => обробитиРучнуЗмінуКм(i)));
 }
@@ -606,6 +611,26 @@ function додатиРядокПММ() {
 function додатиРядокПоїздки() {
   створитиРядокПоїздки_(К_ПОЇЗДКИ_РЯДКІВ);
   К_ПОЇЗДКИ_РЯДКІВ++;
+}
+
+// Вставляє порожній рядок ОДРАЗУ ПІД рядком i (а не завжди в кінці): спершу додає новий рядок
+// в кінець (як звичайне "+ Додати рядок"), тоді зсуває дані знизу вгору аж до i+1 — той самий
+// прийом, що й видалитиРядокПММ використовує для видалення, лише в інший бік.
+function додатиРядокПММПісля_(i) {
+  додатиРядокПММ();
+  for (let k = К_ПММ_РЯДКІВ - 1; k >= i + 2; k--) {
+    скопіюватиРядокПММ_(k - 1, k);
+  }
+  очиститиОдинРядокПММ_(i + 1);
+}
+
+function додатиРядокПоїздкиПісля_(i) {
+  додатиРядокПоїздки();
+  for (let k = К_ПОЇЗДКИ_РЯДКІВ - 1; k >= i + 2; k--) {
+    скопіюватиРядокПоїздки_(k - 1, k);
+  }
+  очиститиОдинРядокПоїздки_(i + 1);
+  перерахуватиОдометриПісля(0);
 }
 
 function обрізатиРядкиПММДо_(кількість) {
@@ -1121,7 +1146,7 @@ function застосуватиСтатусЗакриття_(закритий) {
   // "Зберегти внесені дані" й "Розрахунок ПММ" стоять у тулбарі ОКРЕМО від .paper — блокуємо
   // їх явно. "Закрити/Відкрити дорожній лист" лишається активною завжди, інакше не було б як
   // знову відкрити лист.
-  ['btn-зберегти-все', 'btn-розрахунок-пмм', 'btn-додати-пмм-рядок', 'btn-очистити-розрахунки-пмм'].forEach(id => {
+  ['btn-зберегти-все', 'btn-розрахунок-пмм', 'btn-очистити-розрахунки-пмм'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = закритий;
   });
@@ -1410,7 +1435,7 @@ function оновитиПідсумокПоТипамПММ_() {
 
   const заголовок = document.createElement('tr');
   заголовок.className = 'пмм-підсумок-заголовок';
-  заголовок.innerHTML = '<td colspan="10">Підсумок за видами ПММ</td>';
+  заголовок.innerHTML = '<td colspan="11">Підсумок за видами ПММ</td>';
   підсумокТіло.appendChild(заголовок);
 
   порядок.forEach(назва => {
@@ -1418,6 +1443,7 @@ function оновитиПідсумокПоТипамПММ_() {
     const тр = document.createElement('tr');
     тр.className = 'пмм-підсумок-рядок';
     тр.innerHTML = `
+      <td></td>
       <td class="bold">${назва}</td>
       <td></td><td></td><td></td>
       <td class="center">${стоянка > 0 ? стоянка : ''}</td>
