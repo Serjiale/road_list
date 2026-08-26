@@ -584,7 +584,7 @@ function створитиРядокПоїздки_(i) {
     <td><input id="поїздка-${i}-прибуття" type="datetime-local"></td>
     <td><input id="поїздка-${i}-звантажем" type="number" class="center"></td>
     <td><input id="поїздка-${i}-безвантажу" type="number" class="center"></td>
-    <td><input id="поїздка-${i}-усього" type="number" step="0.1" class="center"></td>
+    <td><input id="поїздка-${i}-усього" type="number" step="1" class="center"></td>
     <td><input id="поїздка-${i}-зпричепом" type="number" class="center"></td>
     <td><input id="поїздка-${i}-набуксирі" type="number" class="center"></td>
     <td><input id="поїздка-${i}-намісці" type="number" class="center"></td>
@@ -956,7 +956,7 @@ function заповнитиРядокПоїздкиЗДаних(i, п) {
   document.getElementById(`поїздка-${i}-маршрут`).value = п.маршрутТекст || '';
   if (п.вибуття) document.getElementById(`поїздка-${i}-вибуття`).value = форматДляInput(п.вибуття);
   if (п.прибуття) document.getElementById(`поїздка-${i}-прибуття`).value = форматДляInput(п.прибуття);
-  document.getElementById(`поїздка-${i}-усього`).value = п.всього != null ? Number(п.всього).toFixed(1) : '';
+  document.getElementById(`поїздка-${i}-усього`).value = п.всього != null ? Number(п.всього) : '';
   підсумкиПоїздок[i] = {
     всього: Number(п.всього) || 0, 'Траса': Number(п.траса) || 0,
     'Населений пункт без регульованих перехресть': Number(п.безРегул) || 0,
@@ -1571,6 +1571,11 @@ async function розрахуватиРядок(i) {
       поleМаршруту.value = базовийТекст;
     }
 
+    // "Усього" (протяжність поїздки) — до цілого кілометра (0,49 і менше — вниз, 0,50 і більше —
+    // вгору), уже ПІСЛЯ прорахунку (і подвоєння для зворотного шляху, якщо позначено). Розбивка
+    // по типах ділянок (траса/нп/обл. центр) лишається точною — округлюємо лише цю колонку.
+    підсумок.всього = Math.round(підсумок.всього);
+
     await зберегтиРядокПоїздки(i, підсумок);
     кнопка.textContent = '✓';
     // "✓" — лише тимчасове підтвердження. Кнопка одразу знову активна (finally нижче), а через
@@ -2139,7 +2144,7 @@ async function зберегтиРядокПоїздки(i, підсумок) {
   };
   const результат = await викликАРІ('зберегтиПоїздку', { дані });
   тр.dataset.id = результат.id;
-  document.getElementById(`поїздка-${i}-усього`).value = підсумок.всього.toFixed(1);
+  document.getElementById(`поїздка-${i}-усього`).value = підсумок.всього;
   document.getElementById(`поїздка-${i}-спідометр`).textContent = одометр;
   підсумкиПоїздок[i] = Object.assign({}, підсумок);
 
@@ -2184,8 +2189,10 @@ function перерахуватиОдометриПісля(відІндексу
 async function обробитиРучнуЗмінуКм(i) {
   const тр = document.getElementById('поїздка-рядок-' + i);
   if (!тр.dataset.id) return; // рядок ще не розрахований і не збережений — нема що масштабувати
-  const нове = parseFloat(document.getElementById(`поїздка-${i}-усього`).value);
+  let нове = parseFloat(document.getElementById(`поїздка-${i}-усього`).value);
   if (isNaN(нове) || нове < 0) return;
+  нове = Math.round(нове); // та сама вимога — "усього" завжди ціле число, і при ручному вводі теж
+  document.getElementById(`поїздка-${i}-усього`).value = нове;
 
   const старий = підсумкиПоїздок[i];
   let підсумок;
