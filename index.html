@@ -986,8 +986,8 @@ function заповнитиРядокПММЗДаних(i, з) {
   document.getElementById(`пмм-${i}-код`).value = з.код || '';
   document.getElementById(`пмм-${i}-наявність`).value = з.наявністьПеред || '';
   document.getElementById(`пмм-${i}-отримано`).value = з.отримано || '';
-  document.getElementById(`пмм-${i}-стоянка`).textContent = з.стоянка != null && з.стоянка !== '' ? Number(з.стоянка).toFixed(1) : '';
-  document.getElementById(`пмм-${i}-витрачено`).textContent = з.витрачено != null && з.витрачено !== '' ? Number(з.витрачено).toFixed(1) : '';
+  document.getElementById(`пмм-${i}-стоянка`).textContent = з.стоянка != null && з.стоянка !== '' ? Number(з.стоянка) : '';
+  document.getElementById(`пмм-${i}-витрачено`).textContent = з.витрачено != null && з.витрачено !== '' ? Number(з.витрачено) : '';
   document.getElementById(`пмм-${i}-належить`).value = з.належить || '';
   document.getElementById(`пмм-${i}-економія`).value = з.економія || '';
   document.getElementById(`пмм-${i}-перевитрата`).value = з.перевитрата || '';
@@ -1420,8 +1420,8 @@ function оновитиПідсумокПоТипамПММ_() {
     тр.innerHTML = `
       <td class="bold">${назва}</td>
       <td></td><td></td><td></td>
-      <td class="center">${стоянка > 0 ? стоянка.toFixed(1) : ''}</td>
-      <td class="center">${витрачено > 0 ? витрачено.toFixed(1) : ''}</td>
+      <td class="center">${стоянка > 0 ? стоянка : ''}</td>
+      <td class="center">${витрачено > 0 ? витрачено : ''}</td>
       <td></td><td></td><td></td><td></td>`;
     підсумокТіло.appendChild(тр);
   });
@@ -1457,8 +1457,8 @@ async function розрахунокПММ() {
     результат.результати.forEach((р, k) => {
       const i = індекси[k];
       document.getElementById('пмм-рядок-' + i).dataset.id = р.id;
-      document.getElementById(`пмм-${i}-витрачено`).textContent = р.витрачено.toFixed(1);
-      document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці > 0 ? р.наявністьНаСтоянці.toFixed(1) : '';
+      document.getElementById(`пмм-${i}-витрачено`).textContent = р.витрачено > 0 ? р.витрачено : '';
+      document.getElementById(`пмм-${i}-стоянка`).textContent = р.наявністьНаСтоянці > 0 ? р.наявністьНаСтоянці : '';
     });
     оновитиПідсумокПоТипамПММ_();
     оновитиПідсумокСторінки1(результат.підсумокКм);
