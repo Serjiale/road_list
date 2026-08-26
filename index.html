@@ -100,8 +100,8 @@
   tr:hover .del-col{ color:#ccc; }
   .del-col:hover{ color:var(--danger) !important; }
 
-  .add-col{ border:none !important; width:16px; padding:0 !important; text-align:center; cursor:pointer;
-    color:transparent; font-weight:bold; font-size:14px; user-select:none; }
+  .add-col{ border:none !important; width:22px; padding:0 !important; text-align:center; cursor:pointer;
+    color:transparent; font-weight:900; font-size:22px; line-height:1; user-select:none; }
   tr:hover .add-col{ color:#ccc; }
   .add-col:hover{ color:var(--accent) !important; }
 
@@ -309,7 +309,7 @@
       <div class="bold" style="margin-top:6px; font-size:11px;">1. Витрата пального і мастильних матеріалів (у літрах)</div>
       <table>
         <colgroup>
-          <col style="width:1.5%"><col style="width:17.06%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
+          <col style="width:2.2%"><col style="width:16.36%"><col style="width:8.60%"><col style="width:9.55%"><col style="width:12.42%">
           <col style="width:12.42%"><col style="width:9.55%"><col style="width:9.55%"><col style="width:8.60%">
           <col style="width:9.24%"><col style="width:1.5%">
         </colgroup>
@@ -337,7 +337,7 @@
       </table>
       <table>
         <colgroup>
-          <col style="width:1.5%"><col style="width:23.62%"><col style="width:6.44%"><col style="width:6.44%">
+          <col style="width:2.2%"><col style="width:22.92%"><col style="width:6.44%"><col style="width:6.44%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
           <col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%"><col style="width:4.60%">
           <col style="width:14.47%"><col style="width:1.5%">
@@ -2173,6 +2173,10 @@ async function зберегтиРядокПоїздки(i, підсумок) {
   document.getElementById(`поїздка-${i}-усього`).value = підсумок.всього;
   document.getElementById(`поїздка-${i}-спідометр`).textContent = одометр;
   підсумкиПоїздок[i] = Object.assign({}, підсумок);
+  // Якщо рядок був вставлений ("+") ПОСЕРЕД уже прорахованих рядків — показники одометра
+  // нижче стали застарілими (рахувались без цього рядка). Раніше цей перерахунок робився лише
+  // при ручному уточненні км/видаленні рядка, тут його бракувало.
+  перерахуватиОдометриПісля(i + 1);
 
   const загальний = [];
   for (let k = 0; k < К_ПОЇЗДКИ_РЯДКІВ; k++) {
