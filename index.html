@@ -297,7 +297,7 @@
           <td><input id="л-дата" type="date" class="center"></td>
           <td><input id="л-підстава" placeholder="розпор."></td>
           <td id="показ-марка" class="center readonly-cell"></td>
-          <td><select id="л-машина" class="center"></select></td>
+          <td><select id="л-машина" class="center readonly-cell" disabled title="Машину дорожнього листа можна змінити лише напряму в Google Таблиці (аркуш «Дорожні листи»), не через форму."></select></td>
           <td><input id="л-причіп"></td>
           <td><input id="л-причіпномер"></td>
           <td id="показ-група" class="center readonly-cell"></td>
@@ -1149,7 +1149,9 @@ function застосуватиСтатусЗакриття_(закритий) {
   document.querySelectorAll('.paper').forEach(п => п.classList.toggle('closed', закритий));
   // .paper button — щоб заблокувати й кнопки всередині аркуша (🧮 розрахувати поїздку,
   // 📍🗺️🛠️ маршрут, "+ Додати рядок", "Очистити дані розрахунків"), а не лише поля вводу.
-  document.querySelectorAll('.paper input, .paper select, .paper textarea, .paper button').forEach(el => { el.disabled = закритий; });
+  // #л-машина виключено навмисно — вона заблокована ЗАВЖДИ (і в закритому, і у відкритому
+  // листі), незалежно від статусу закриття; інакше відкриття листа знову зробило б її активною.
+  document.querySelectorAll('.paper input, .paper select:not(#л-машина), .paper textarea, .paper button').forEach(el => { el.disabled = закритий; });
   // "Зберегти внесені дані" й "Розрахунок ПММ" стоять у тулбарі ОКРЕМО від .paper — блокуємо
   // їх явно. "Закрити/Відкрити дорожній лист" лишається активною завжди, інакше не було б як
   // знову відкрити лист.
