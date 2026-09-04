@@ -6,6 +6,7 @@
 <title>Дорожній лист</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="docx-bundle.js"></script>
@@ -408,6 +409,35 @@
       <button class="secondary" onclick="згенеруватиExcel()">Згенерувати Excel</button>
       <div id="excel-повідомлення"></div>
     </div>
+
+    <div class="add-row-form" style="max-width:1500px;">
+      <h2 style="margin-top:0;">Друк на готовому (проштампованому) бланку — сторінка 2</h2>
+      <p style="color:var(--dim); font-size:13px;">
+        Друкує ЛИШЕ дані поїздок (без меж, без сітки) поверх уже надрукованого й
+        підписаного паперового бланка — аркуш заряджається в принтер як є. Спочатку
+        роздрукуй калібрувальну сторінку на чистому папері, приклади її до справжнього
+        бланка на просвіт і підбери зсув (крок 0,5 мм), поки хрестики не ляжуть точно
+        на кути таблиці поїздок.
+      </p>
+      <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim);">
+          Зсув по горизонталі (мм)
+          <input id="друк-зсув-x" type="number" step="0.5" style="width:100px;">
+        </label>
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim);">
+          Зсув по вертикалі (мм)
+          <input id="друк-зсув-y" type="number" step="0.5" style="width:100px;">
+        </label>
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim);">
+          Висота рядка (мм)
+          <input id="друк-висота-рядка" type="number" step="0.1" style="width:100px;">
+        </label>
+        <button class="secondary" onclick="зБлокуванням_(зберегтиДрукНалаштування_)">Зберегти калібрування</button>
+      </div>
+      <button class="secondary" onclick="зБлокуванням_(() => генеруватиPDFБланк_(true))">Роздрукувати калібрувальну сторінку</button>
+      <button onclick="зБлокуванням_(() => генеруватиPDFБланк_(false))">Друк сторінки 2 на бланку</button>
+      <div id="друк-бланк-повідомлення"></div>
+    </div>
   </div>
 
     </div>
@@ -449,6 +479,7 @@ function показатиОсновну_() {
   заповнитиДатуСелекти_('л-дійснийдо');
   заповнитиДатуСелекти_('л-технікдата');
   заповнитиДатуСелекти_('л-ктпдата');
+  заповнитиДрукПоляНалаштувань_();
 }
 
 function handleCredentialResponse(response) {
@@ -2547,6 +2578,126 @@ function зібратиДаніПоїздок() {
     });
   }
   return список;
+}
+
+// ==================== ДРУК НА ГОТОВОМУ (ПРОШТАМПОВАНОМУ) БЛАНКУ — СТОРІНКА 2 ====================
+// Тут НЕ малюємо жодних меж/сітки — на паперовому бланку вони вже фізично надруковані.
+// Координати нижче зняті напряму з "шаблон.docx" (той самий tblGrid/tblInd, який ми довго
+// звіряли пікселя в піксель з оригінальною формою), переведені з twips (1440 = 1 дюйм) у мм.
+const ДРУК_МЕЖІ_КОЛОНОК_TWIPS = [268.8, 3504.0, 4406.4, 5308.8, 5846.4, 6393.6, 6931.2, 7497.6, 8361.6, 8889.6, 9427.2, 9964.8, 10512.0, 11049.6, 12768.0];
+const ДРУК_TWIPS_У_ММ = 25.4 / 1440;
+const ДРУК_МЕЖІ_КОЛОНОК_ММ = ДРУК_МЕЖІ_КОЛОНОК_TWIPS.map(t => t * ДРУК_TWIPS_У_ММ);
+const ДРУК_ВЕРХ_ТАБЛИЦІ_ММ = 1248.0 * ДРУК_TWIPS_У_ММ;      // верхня межа шапки таблиці від верху сторінки
+const ДРУК_ПОЧАТОК_ДАНИХ_ММ = 3715.2 * ДРУК_TWIPS_У_ММ;     // низ рядка нумерації "1…14" = верх 1-го рядка даних
+const ДРУК_ВИСОТА_РЯДКА_ММ_ДЕФОЛТ = Math.round(284.0 * ДРУК_TWIPS_У_ММ * 100) / 100;
+// Поля поїздки — рівно 14, у тому самому порядку, що й колонки 1…14 шаблону.
+const ДРУК_ПОЛЯ_ПОЇЗДКИ = ['маршрут','вибуття','прибуття','звантажем','безвантажу','усього','зпричепом','набуксирі','намісці','підчасруху','мотогодини','вантаж','кількість','спідометр'];
+const ДРУК_ВИРІВНЮВАННЯ = { маршрут: 'left' }; // решта колонок — по центру
+
+function друкНалаштування_() {
+  try {
+    const збережено = JSON.parse(localStorage.getItem('дл_друк_налаштування') || '{}');
+    return {
+      зсувX: Number(збережено.зсувX) || 0,
+      зсувY: Number(збережено.зсувY) || 0,
+      висотаРядка: Number(збережено.висотаРядка) || ДРУК_ВИСОТА_РЯДКА_ММ_ДЕФОЛТ
+    };
+  } catch (e) {
+    return { зсувX: 0, зсувY: 0, висотаРядка: ДРУК_ВИСОТА_РЯДКА_ММ_ДЕФОЛТ };
+  }
+}
+
+function заповнитиДрукПоляНалаштувань_() {
+  const н = друкНалаштування_();
+  document.getElementById('друк-зсув-x').value = н.зсувX;
+  document.getElementById('друк-зсув-y').value = н.зсувY;
+  document.getElementById('друк-висота-рядка').value = н.висотаРядка;
+}
+
+async function зберегтиДрукНалаштування_() {
+  const н = {
+    зсувX: Number(document.getElementById('друк-зсув-x').value) || 0,
+    зсувY: Number(document.getElementById('друк-зсув-y').value) || 0,
+    висотаРядка: Number(document.getElementById('друк-висота-рядка').value) || ДРУК_ВИСОТА_РЯДКА_ММ_ДЕФОЛТ
+  };
+  localStorage.setItem('дл_друк_налаштування', JSON.stringify(н));
+  document.getElementById('друк-бланк-повідомлення').innerHTML = '<p class="msg ok">✓ Калібрування збережено</p>';
+}
+
+// Малює або калібрувальні хрестики/риски (для звірки на просвіт з чистим аркушем), або реальні
+// дані поїздок — на одному великому канвасі (щоб кирилиця йшла звичайним шрифтом браузера,
+// без вбудовування кириличного TTF у сам jsPDF), який потім вставляється в PDF одним зображенням.
+function малюватиБланк_(ctx, dpi, калібрування, н) {
+  const ммДоПкс = dpi / 25.4;
+  const x0 = н.зсувX * ммДоПкс, y0 = н.зсувY * ммДоПкс;
+  const колX = ДРУК_МЕЖІ_КОЛОНОК_ММ.map(м => x0 + м * ммДоПкс);
+  const рядокВисПкс = н.висотаРядка * ммДоПкс;
+  const початокДаних = y0 + ДРУК_ПОЧАТОК_ДАНИХ_ММ * ммДоПкс;
+  const верхТаблиці = y0 + ДРУК_ВЕРХ_ТАБЛИЦІ_ММ * ммДоПкс;
+
+  ctx.strokeStyle = '#000'; ctx.fillStyle = '#000'; ctx.lineWidth = Math.max(1, dpi / 200);
+
+  if (калібрування) {
+    const хрестик = (x, y) => {
+      const р = dpi * 0.05; // ~1.3мм плече хрестика
+      ctx.beginPath(); ctx.moveTo(x - р, y); ctx.lineTo(x + р, y);
+      ctx.moveTo(x, y - р); ctx.lineTo(x, y + р); ctx.stroke();
+    };
+    хрестик(колX[0], верхТаблиці);
+    хрестик(колX[колX.length - 1], верхТаблиці);
+    хрестик(колX[0], початокДаних);
+    хрестик(колX[колX.length - 1], початокДаних);
+    [5, 10, 15, 20].forEach(n => хрестик(колX[0], початокДаних + n * рядокВисПкс));
+    // тонкі риски на кожній межі колонки вздовж лінії початку даних — звірити ширини колонок
+    колX.forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x, початокДаних - dpi * 0.08); ctx.lineTo(x, початокДаних + dpi * 0.08); ctx.stroke();
+    });
+    ctx.font = `${Math.round(dpi * 0.09)}px sans-serif`;
+    ctx.fillText('Приклади на просвіт до чистого бланка й підбери зсув/висоту рядка', колX[0], верхТаблиці - dpi * 0.15);
+    return;
+  }
+
+  const поїздки = зібратиДаніПоїздок();
+  const шрифтПкс = Math.max(6, Math.round(dpi * 0.085));
+  ctx.font = `${шрифтПкс}px sans-serif`;
+  for (let i = 0; i < поїздки.length && i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
+    const п = поїздки[i];
+    const yЦентр = початокДаних + i * рядокВисПкс + рядокВисПкс * 0.68; // ~базова лінія по вертикальному центру рядка
+    ДРУК_ПОЛЯ_ПОЇЗДКИ.forEach((поле, col) => {
+      const текст = String(п[поле] ?? '');
+      if (!текст) return;
+      const лівий = колX[col], правий = колX[col + 1];
+      if ((ДРУК_ВИРІВНЮВАННЯ[поле] || 'center') === 'left') {
+        ctx.textAlign = 'left';
+        ctx.fillText(текст, лівий + dpi * 0.03, yЦентр);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(текст, (лівий + правий) / 2, yЦентр);
+      }
+    });
+  }
+}
+
+async function генеруватиPDFБланк_(калібрування) {
+  const повідомлення = document.getElementById('друк-бланк-повідомлення');
+  try {
+    const { jsPDF } = window.jspdf;
+    const н = друкНалаштування_();
+    const dpi = 300;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(297 / 25.4 * dpi);
+    canvas.height = Math.round(210 / 25.4 * dpi);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    малюватиБланк_(ctx, dpi, калібрування, н);
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 297, 210);
+    doc.save(калібрування ? 'Калібрування_друку.pdf' : `Дорожній_лист_${document.getElementById('л-номер').value || 'друк'}_сторінка2.pdf`);
+    повідомлення.innerHTML = '<p class="msg ok">✓ PDF сформовано</p>';
+  } catch (e) {
+    повідомлення.innerHTML = `<p class="msg err">Помилка: ${e.message}</p>`;
+  }
 }
 
 async function згенеруватиExcel() {
