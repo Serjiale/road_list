@@ -7,6 +7,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Neucha&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="docx-bundle.js"></script>
@@ -2658,8 +2659,10 @@ function малюватиБланк_(ctx, dpi, калібрування, н) {
   }
 
   const поїздки = зібратиДаніПоїздок();
+  // Той самий розмір, що й раніше (з sans-serif він уже ідеально влазив у вузькі колонки) —
+  // навмисно НЕ збільшую під новий шрифт, щоб не зламати вже підібраний фіт по ширині.
   const шрифтПкс = Math.max(6, Math.round(dpi * 0.085));
-  ctx.font = `${шрифтПкс}px sans-serif`;
+  ctx.font = `${шрифтПкс}px 'Neucha', cursive`;
   for (let i = 0; i < поїздки.length && i < К_ПОЇЗДКИ_РЯДКІВ; i++) {
     const п = поїздки[i];
     const yЦентр = початокДаних + i * рядокВисПкс + рядокВисПкс * 0.68; // ~базова лінія по вертикальному центру рядка
@@ -2684,6 +2687,12 @@ async function генеруватиPDFБланк_(калібрування) {
     const { jsPDF } = window.jspdf;
     const н = друкНалаштування_();
     const dpi = 300;
+    // Canvas не чекає на веб-шрифти сам по собі — без цього перший рендер (поки Neucha ще
+    // не підвантажилась) тихо йде запасним cursive-шрифтом браузера, і людський почерк не виходить.
+    try {
+      await document.fonts.load(`${Math.round(dpi * 0.085)}px 'Neucha'`);
+      await document.fonts.ready;
+    } catch (e) { /* якщо шрифт не підвантажився — краще намалювати запасним, ніж зовсім нічого */ }
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(297 / 25.4 * dpi);
     canvas.height = Math.round(210 / 25.4 * dpi);
