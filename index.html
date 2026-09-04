@@ -38,6 +38,15 @@
   #вхід{ text-align:center; padding-top:80px; }
   #вхід-помилка{ color:#f0a; margin-top:10px; }
 
+  #завантаження{ text-align:center; padding-top:120px; }
+  #завантаження .spinner{
+    width:36px; height:36px; margin:0 auto 18px; border-radius:50%;
+    border:3px solid var(--border); border-top-color:var(--accent);
+    animation:спін .8s linear infinite;
+  }
+  #завантаження p{ color:var(--dim); font-size:13px; }
+  @keyframes спін{ to{ transform:rotate(360deg); } }
+
   .tabs-row-outer{ padding:14px 24px; }
   .tabs-row{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; max-width:1500px; margin:0 auto; }
   .tabs{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
@@ -168,6 +177,13 @@
 </style>
 </head>
 <body>
+
+<div id="завантаження" style="display:none;">
+  <div class="eyebrow">Корпорація «Інтелект»</div>
+  <h1>Дорожній лист</h1>
+  <div class="spinner"></div>
+  <p>Перевіряємо збережений вхід…</p>
+</div>
 
 <div id="вхід">
   <div class="eyebrow">Корпорація «Інтелект»</div>
@@ -417,7 +433,16 @@ let обраМашина = null;
 let сесіяТокен = localStorage.getItem('дл_сесія') || null;
 let поточнийEmail = null;
 
+// Є збережений токен — ховаємо екран входу одразу й показуємо "завантаження", щоб не блимав
+// Google-кнопкою на секунду-дві, поки йде тиха спроба увійти збереженою сесією (нижче, у
+// window.load). Якщо токена немає — одразу лишаємо звичайний екран входу, чекати нічого.
+if (сесіяТокен) {
+  document.getElementById('вхід').style.display = 'none';
+  document.getElementById('завантаження').style.display = 'block';
+}
+
 function показатиОсновну_() {
+  document.getElementById('завантаження').style.display = 'none';
   document.getElementById('вхід').style.display = 'none';
   document.getElementById('основна').style.display = 'block';
   побудуватиТаблиці();
@@ -461,6 +486,8 @@ window.addEventListener('load', () => {
     завантажитиДовідники().then(показатиОсновну_).catch(() => {
       сесіяТокен = null;
       localStorage.removeItem('дл_сесія');
+      document.getElementById('завантаження').style.display = 'none';
+      document.getElementById('вхід').style.display = 'block';
     });
   }
 });
