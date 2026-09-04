@@ -1051,6 +1051,16 @@ function форматДляПоказу(значенняInput) {
   return `${день}.${місяць}.${рік} ${год}:${хв}`;
 }
 
+// Без року (дорожній лист — максимум на 15 днів, рік очевидний з контексту) і з коротшим
+// "дд.мм" — щоб уміщалось в дуже вузькі колонки "дата/час" на сторінці 2 без розтягування.
+function форматКомпактноДляДруку(значенняInput) {
+  if (!значенняInput) return '';
+  const збіг = значенняInput.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!збіг) return значенняInput.replace('T', ' ');
+  const [, , місяць, день, год, хв] = збіг;
+  return `${день}.${місяць} ${год}:${хв}`;
+}
+
 // ==================== УЗАГАЛЬНЮЮЧІ БЛОКИ (не друкуються, лише на екрані) ====================
 function побудуватиКарткиКм_(підсумокКм) {
   return `
@@ -2409,9 +2419,9 @@ async function згенеруватиDocx() {
       ктп_день: document.getElementById('л-ктпдата-д').value,
       ктп_місяць: document.getElementById('л-ктпдата-м').value,
       ктп_рік: document.getElementById('л-ктпдата-р').value,
-      вибуття_дата: форматДляПоказу(document.getElementById('л-вибуттядата').value),
+      вибуття_дата: форматКомпактноДляДруку(document.getElementById('л-вибуттядата').value),
       вибуття_одометр: document.getElementById('л-вибуттяодометр').value,
-      прибуття_дата: форматДляПоказу(document.getElementById('л-прибуттядата').value),
+      прибуття_дата: форматКомпактноДляДруку(document.getElementById('л-прибуттядата').value),
       прибуття_одометр: document.getElementById('л-прибуттяодометр').value,
       v_номер: document.getElementById('л-номер').value,
       v_дата: document.getElementById('л-дата').value,
@@ -2482,8 +2492,8 @@ function зібратиДаніПоїздок() {
     const маршрут = document.getElementById(`поїздка-${i}-маршрут`).value.replace(/\s*🔄\s*$/, '');
     if (!маршрут) continue;
     список.push({
-      маршрут, вибуття: форматДляПоказу(document.getElementById(`поїздка-${i}-вибуття`).value),
-      прибуття: форматДляПоказу(document.getElementById(`поїздка-${i}-прибуття`).value),
+      маршрут, вибуття: форматКомпактноДляДруку(document.getElementById(`поїздка-${i}-вибуття`).value),
+      прибуття: форматКомпактноДляДруку(document.getElementById(`поїздка-${i}-прибуття`).value),
       звантажем: document.getElementById(`поїздка-${i}-звантажем`).value,
       безвантажу: document.getElementById(`поїздка-${i}-безвантажу`).value,
       усього: document.getElementById(`поїздка-${i}-усього`).value,
